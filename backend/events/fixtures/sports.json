@@ -1,0 +1,12 @@
+[
+  {"model": "events.sport", "pk": 1, "fields": {"name": "Modern pentathlon", "slug": "pentathlon", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 2, "fields": {"name": "Fencing", "slug": "fencing", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 3, "fields": {"name": "Football", "slug": "football", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 4, "fields": {"name": "Running", "slug": "running", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 5, "fields": {"name": "Swimming", "slug": "swimming", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 6, "fields": {"name": "Basketball", "slug": "basketball", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 7, "fields": {"name": "Handball", "slug": "handball", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 8, "fields": {"name": "Water polo", "slug": "water-polo", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 9, "fields": {"name": "Cycling", "slug": "cycling", "kind": "sport", "icon": ""}},
+  {"model": "events.sport", "pk": 10, "fields": {"name": "Tennis", "slug": "tennis", "kind": "sport", "icon": ""}}
+]

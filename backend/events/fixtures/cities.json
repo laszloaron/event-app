@@ -1,0 +1,7 @@
+[
+  {"model": "events.city", "pk": 1, "fields": {"name": "Budapest", "name_normalized": "budapest", "center": "SRID=4326;POINT (19.0402 47.4979)", "timezone": "Europe/Budapest"}},
+  {"model": "events.city", "pk": 2, "fields": {"name": "Debrecen", "name_normalized": "debrecen", "center": "SRID=4326;POINT (21.6273 47.5316)", "timezone": "Europe/Budapest"}},
+  {"model": "events.city", "pk": 3, "fields": {"name": "Szeged", "name_normalized": "szeged", "center": "SRID=4326;POINT (20.1414 46.2530)", "timezone": "Europe/Budapest"}},
+  {"model": "events.city", "pk": 4, "fields": {"name": "Pécs", "name_normalized": "pecs", "center": "SRID=4326;POINT (18.2323 46.0727)", "timezone": "Europe/Budapest"}},
+  {"model": "events.city", "pk": 5, "fields": {"name": "Győr", "name_normalized": "gyor", "center": "SRID=4326;POINT (17.6504 47.6875)", "timezone": "Europe/Budapest"}}
+]

@@ -1,0 +1,45 @@
+# EventMap stack: nginx (SPA + reverse proxy) -> Django backend -> PostGIS.
+# See docs/architecture.md §1 for the reasoning behind each choice.
+services:
+  db:
+    image: postgis/postgis:16-3.4   # PostGIS needed for GeoDjango radius queries (US-01/02)
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]            # never reachable from nginx or the host
+
+  backend:
+    build: ./backend
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks: [public, internal]    # not port-published; only nginx reaches it
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"                     # the only published port
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [public]
+
+networks:
+  public: {}
+  internal:
+    internal: true                  # least privilege: db has no route outside the stack
+
+volumes:
+  pgdata: {}
