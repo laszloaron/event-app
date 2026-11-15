@@ -1,0 +1,80 @@
+/* App frame: TabBar (phone) / NavRail (desktop) and the main area (docs/ui_design.md §4, §4.1). Prefix `l-`. */
+.l-shell { display: flex; min-height: 100dvh; }
+.l-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding-bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+}
+
+.l-nav { display: flex; background: var(--color-surface); z-index: var(--z-bars); }
+.l-nav--bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--elevation-2);
+}
+.l-nav--rail { display: none; }
+
+.l-nav__item {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: var(--touch-target);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font: var(--font-caption);
+  transition: color var(--motion-fast);
+}
+.l-nav__item--active { color: var(--color-primary); }
+.l-nav--bar .l-nav__item--active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--color-primary);
+}
+.l-nav__icon { position: relative; display: inline-flex; }
+.l-nav__icon .ui-count-badge { position: absolute; top: -6px; right: -12px; }
+.l-nav__logo { display: flex; justify-content: center; margin: var(--space-xl) 0; color: var(--color-primary); }
+
+@media (min-width: 1024px) {
+  .l-main { padding-bottom: 0; }
+  .l-nav--bar { display: none; }
+  .l-nav--rail {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-s);
+    flex-shrink: 0;
+    width: var(--nav-rail-width);
+    height: 100dvh;
+    border-right: 1px solid var(--color-border);
+  }
+  .l-nav--rail .l-nav__item {
+    flex: 0 0 64px;
+    width: 64px;
+    border-radius: var(--radius-m);
+  }
+  .l-nav--rail .l-nav__item:last-child { margin-top: auto; margin-bottom: var(--space-l); }
+  .l-nav--rail .l-nav__item--active { background: var(--color-primary-soft); }
+}
+
+/* Page body helpers shared by the list pages. */
+.l-page-body { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; }
+.l-page-padded { padding: var(--space-l) var(--page-padding); }
+.l-stack { display: flex; flex-direction: column; gap: var(--space-l); }

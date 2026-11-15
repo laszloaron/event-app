@@ -7,6 +7,22 @@ Applies on top of the root [AGENTS.md](../AGENTS.md).
 - Served by nginx (`nginx.conf`): `/api/*` is proxied to `backend:8000`, and every other path falls back to `index.html` (Single Page Application routing).
 - Add a dependency (e.g. Leaflet for US-01) only when a story needs it, and record the reason in `docs/architecture.md`.
 
+## Folder structure
+```
+src/
+  styles/            tokens.css (every colour/size/timing, ui_design.md §2), base.css (reset, type classes, focus ring)
+  components/ui/     reusable primitives + composites (Button, TextField, Sheet, Dialog, ListRow…), ui.css, `ui-` classes
+  components/domain/ EventMap-specific parts (EventRow, EventCard, EventMap, FilterSheet, InboxRow…), domain.css, `d-` classes
+  components/layout/ AppShell: TabBar (phone) / NavRail (desktop), `l-` classes
+  pages/             one file per screen (§5) + pages.css, `p-` classes; screens only arrange components
+  routing/           URL helpers (§8): card overlay, safe `next`, back with fallback
+  session/           session context (placeholder login for now)
+  mocks/             placeholder data typed with schema.d.ts; replace with src/api/* calls story by story
+  api/               fetch functions + generated schema.d.ts
+```
+- Import components only through `components/ui` and `components/domain` (their `index.ts`).
+- Routes live in `App.tsx` and follow ui_design.md §8.1; the event card is drawn over `state.background`.
+
 ## Conventions
 - All HTTP calls go through `src/api/<resource>.ts`, which exports fetch functions. Components never call `fetch` directly.
 - Request/response types for `/api/v1` come from the generated `src/api/schema.d.ts` (`import type { EventDetailOut } from "./schema"`), never hand-written. Never edit `schema.d.ts` or `openapi.json`; regenerate with `scripts/gen-api.sh` / `scripts\gen-api.ps1` (architecture.md §3 "Typed client"). Only the unversioned `/api/health` keeps a hand-written type.

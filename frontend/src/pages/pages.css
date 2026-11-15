@@ -1,0 +1,136 @@
+/* Screen layouts (docs/ui_design.md §5). Prefix `p-`. Screens only arrange components; they use tokens only. */
+
+/* ---------- Discover (§5.1, §5.2) ---------- */
+.p-discover {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--tab-bar-height) - env(safe-area-inset-bottom));
+}
+.p-discover__panel { display: flex; flex-direction: column; min-height: 0; background: var(--color-surface); }
+.p-discover__header {
+  position: relative;
+  z-index: var(--z-bars);
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-s);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-2);
+}
+.p-discover__search-row { display: flex; align-items: center; gap: var(--space-xs); padding: 0 var(--space-xs) 0 var(--page-padding); }
+.p-discover__search-row .d-search { flex: 1; }
+.p-discover__view-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding: var(--space-xs) var(--page-padding) var(--space-s);
+}
+.p-discover__count { font: var(--font-body-s-strong); }
+.p-discover__list { flex: 1; overflow-y: auto; background: var(--color-background); }
+.p-discover__map { position: relative; flex: 1; min-height: 0; }
+.p-discover__locate {
+  position: absolute;
+  right: var(--space-l);
+  bottom: calc(56px + var(--space-xl) + var(--space-s));
+  z-index: var(--z-map-controls);
+}
+/* Phone: either the map or the list. */
+.p-discover[data-view="map"] .p-discover__list { display: none; }
+.p-discover[data-view="list"] .p-discover__panel { flex: 1; }
+.p-discover[data-view="list"] .p-discover__map { display: none; }
+.p-discover[data-view="list"] .ui-fab { display: none; }
+
+/* Desktop: list panel (400 px) + map side by side; the Map | List switch is not needed. */
+@media (min-width: 1024px) {
+  .p-discover { flex-direction: row; height: 100dvh; }
+  .p-discover__panel { flex: 0 0 var(--list-panel-width); border-right: 1px solid var(--color-border); }
+  .p-discover[data-view] .p-discover__list { display: block; }
+  .p-discover[data-view] .p-discover__map { display: block; }
+  .p-discover[data-view] .ui-fab { display: inline-flex; }
+  .p-discover__toggle { display: none; }
+  .p-discover__header { box-shadow: none; border-bottom: 1px solid var(--color-border); }
+  .p-discover__locate { bottom: calc(56px + var(--space-xl) + var(--space-l)); right: var(--space-xl); }
+}
+
+/* ---------- Log in / Register (§5.6) ---------- */
+.p-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: var(--space-s) var(--page-padding) var(--space-2xl);
+  background: var(--color-background);
+}
+.p-auth__back { align-self: flex-start; }
+.p-auth__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+  width: 100%;
+  max-width: var(--auth-card-max-width);
+  margin-top: var(--space-l);
+  padding: var(--space-xl);
+  border-radius: var(--radius-l);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-1);
+}
+.p-auth__logo { align-self: center; color: var(--color-primary); }
+.p-auth__title { text-align: center; }
+.p-auth__form { display: flex; flex-direction: column; gap: var(--space-l); }
+.p-auth__switch { text-align: center; color: var(--color-text-muted); }
+.p-auth__switch a { font-weight: 600; }
+
+/* ---------- Account (§5.9) ---------- */
+.p-account__header { display: flex; align-items: center; gap: var(--space-l); }
+.p-account__header .ui-tag { margin-top: var(--space-xs); }
+.p-account__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font: var(--font-title-l);
+}
+.p-account__menu { margin: 0 calc(-1 * var(--space-l)); }
+.p-account__menu .ui-list-row { padding-left: var(--space-l); padding-right: var(--space-l); }
+.p-account__menu .ui-list-row:last-child { border-bottom: none; }
+.p-account__menu .ui-list-row__leading { color: var(--color-primary); }
+.p-account__logout { color: var(--color-danger); }
+
+/* ---------- My drafts (§5.11) ---------- */
+.p-untitled { font-style: italic; font-weight: 400; color: var(--color-text-muted); }
+.p-draft-meta { display: flex; align-items: center; gap: var(--space-s); margin-top: var(--space-xs); }
+
+/* ---------- Event form (§5.10) ---------- */
+.p-form { min-height: 100dvh; background: var(--color-background); }
+.p-form__editor,
+.p-form__preview { display: flex; flex-direction: column; min-height: 100dvh; }
+.p-form__editor[hidden] { display: none; }
+.p-form__body,
+.p-form__preview-body {
+  flex: 1;
+  width: 100%;
+  max-width: var(--form-max-width);
+  margin: 0 auto;
+  padding: var(--space-l) var(--page-padding) var(--space-2xl);
+}
+.p-form__preview-body { display: flex; flex-direction: column; gap: var(--space-l); background: var(--color-surface); }
+.p-form__pair { display: grid; gap: var(--space-l); }
+.p-form__amount { display: grid; grid-template-columns: 1fr 112px; gap: var(--space-m); }
+.p-form__links { display: flex; flex-direction: column; gap: var(--space-m); }
+.p-form__link-row { display: grid; grid-template-columns: 128px 1fr var(--touch-target); gap: var(--space-s); align-items: end; }
+.p-form .ui-action-bar { width: 100%; }
+@media (min-width: 600px) {
+  .p-form__pair { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 760px) {
+  .p-form .ui-action-bar { padding-left: calc((100% - var(--form-max-width)) / 2 + var(--page-padding)); padding-right: calc((100% - var(--form-max-width)) / 2 + var(--page-padding)); }
+}
+
+/* ---------- Not found (§5.13) ---------- */
+.p-centered { display: flex; flex: 1; align-items: center; justify-content: center; min-height: 60dvh; }

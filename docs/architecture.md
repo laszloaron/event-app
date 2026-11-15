@@ -26,6 +26,9 @@ Browser ──HTTPS/HTTP──► nginx  (only published port, 80)
 | "Ended" is computed (`end_at < now()`), not a status set by a job | US-01/07/23 hide ended events; a computed rule needs no cron and can never be stale. |
 | Clustering (US-13) done **client-side** (Leaflet + markercluster) | Clustering depends on zoom level, which only the client knows; single launch city ⇒ result sets are small enough to return in full. |
 | Map tiles: OpenStreetMap via Leaflet; no API key | Free, no secret management; venue pin (form) uses same map. |
+| Frontend map: **leaflet** + **react-leaflet 4** (+ `@types/leaflet` dev) | US-01/12/13 need an interactive OSM map; react-leaflet renders markers as React state instead of hand-managed Leaflet objects. v4 because v5 requires React 19 and the app is on React 18. |
+| Frontend routing: **react-router 7** | ui_design.md §8 needs URLs for every page plus the event card as an overlay over the previous screen (US-11, `state.background`). v7 instead of v6: the v6 line has an open-redirect advisory (GHSA-2j2x-hqr9-3h42) that is fixed only in ≥ 7.17.1; v7 still supports React 18 and Node 20. |
+| Frontend icons: **lucide-react** | ui_design.md §2.5 asks for one outline icon set; lucide is tree-shaken per icon, so only the used icons ship. |
 | City lookup (US-04) = seeded `City` table, not an external geocoder | Spec: single launch region; deterministic "City not found"; no third-party dependency/rate limits. |
 | Logging: containers log to stdout; `scripts/start.*` streams `docker compose logs -f` into `logs/eventapp_<timestamp>.log` (one file per start) | Gathers every container into one file without a 4th log-collector container or per-image log config; each line keeps the service name. |
 
