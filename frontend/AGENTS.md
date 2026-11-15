@@ -16,12 +16,15 @@ src/
   components/layout/ AppShell: TabBar (phone) / NavRail (desktop), `l-` classes
   pages/             one file per screen (§5) + pages.css, `p-` classes; screens only arrange components
   routing/           URL helpers (§8): card overlay, safe `next`, back with fallback
-  session/           session context (placeholder login for now)
-  mocks/             placeholder data typed with schema.d.ts; replace with src/api/* calls story by story
-  api/               fetch functions + generated schema.d.ts
+  session/           logged-in user from GET /me, login/register/logout, role helpers (`can.*`)
+  hooks/             useApi + refresh after writes, toast, search area (GPS/city), filters in the URL, sports
+  utils/             display formatting, time-zone conversion, event form rules (US-09 saving rules)
+  api/               client.ts (the only `fetch`: CSRF, `{detail, field}` → ApiError), one file per resource, generated schema.d.ts
 ```
 - Import components only through `components/ui` and `components/domain` (their `index.ts`).
-- Routes live in `App.tsx` and follow ui_design.md §8.1; the event card is drawn over `state.background`.
+- Routes live in `App.tsx` and follow ui_design.md §8.1; the event card is drawn over `state.background`. Access rules (§8.5) live in its `Guard`.
+- Show/hide actions from the API's `viewer` flags and `/me` role, never by re-implementing a permission rule (architecture.md §3).
+- After a successful write call `useRefresh()()` so every open screen reloads (the card sits over other screens, US-11).
 
 ## Conventions
 - All HTTP calls go through `src/api/<resource>.ts`, which exports fetch functions. Components never call `fetch` directly.

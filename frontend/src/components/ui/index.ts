@@ -1,7 +1,7 @@
 // Public entry of the reusable UI kit (ui_design.md §3.1–3.2). Screens import from here only.
 import "./ui.css";
 
-export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
+export { Button, ButtonLink, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
 export { IconButton } from "./IconButton";
 export { CountBadge } from "./CountBadge";
 export { TextField, TextArea, Select, DateTimeField, type SelectOption } from "./Field";

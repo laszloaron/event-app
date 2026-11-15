@@ -3,7 +3,7 @@ import "./domain.css";
 
 export { SportIcon, SportBadge, PriceLabel, DateTimeRange, StatusTags } from "./EventBits";
 export { EventRow, type EventRowData } from "./EventRow";
-export { EventMap, VenuePicker } from "./EventMap";
+export { EventMap, VenuePicker, type LatLng } from "./EventMap";
 export { EventCardBody, EventCardActions, ShareButton } from "./EventCard";
 export { SearchBox, FilterChips, FilterSheet, CityPrompt, ClusterList, type FilterSection } from "./Discover";
 export { InboxRow, ChangeList, RequestCard, AuditRow } from "./Messages";

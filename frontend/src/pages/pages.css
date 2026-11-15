@@ -36,6 +36,31 @@
   z-index: var(--z-map-controls);
 }
 /* Phone: either the map or the list. */
+/* Thin loading line under the header while results load (§6). */
+.p-discover__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: p-progress 1.2s linear infinite;
+}
+@keyframes p-progress { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+.p-discover__skeletons { display: flex; flex-direction: column; gap: var(--space-s); padding: var(--space-l) var(--page-padding); }
+/* "No events found" floats over the map; the filters above stay usable (US-03). */
+.p-discover__map-empty {
+  position: absolute;
+  left: var(--page-padding);
+  right: var(--page-padding);
+  bottom: var(--space-xl);
+  z-index: var(--z-map-controls);
+  background: var(--color-surface);
+  border-radius: var(--radius-l);
+  box-shadow: var(--elevation-2);
+}
 .p-discover[data-view="map"] .p-discover__list { display: none; }
 .p-discover[data-view="list"] .p-discover__panel { flex: 1; }
 .p-discover[data-view="list"] .p-discover__map { display: none; }
@@ -49,6 +74,7 @@
   .p-discover[data-view] .p-discover__map { display: block; }
   .p-discover[data-view] .ui-fab { display: inline-flex; }
   .p-discover__toggle { display: none; }
+  .p-discover__map-empty { display: none; } /* the list panel already shows it */
   .p-discover__header { box-shadow: none; border-bottom: 1px solid var(--color-border); }
   .p-discover__locate { bottom: calc(56px + var(--space-xl) + var(--space-l)); right: var(--space-xl); }
 }

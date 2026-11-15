@@ -6,6 +6,7 @@
 /* ---------- Button ---------- */
 .ui-button {
   display: inline-flex;
+  text-decoration: none; /* ButtonLink */
   align-items: center;
   justify-content: center;
   gap: var(--space-s);
@@ -325,7 +326,10 @@
 }
 .ui-list-row:hover { background: var(--color-background); }
 .ui-list-row--compact { min-height: 56px; align-items: center; }
-.ui-list-row--dimmed > :not(.ui-list-row__trailing) { opacity: 0.6; }
+/* Dim the content, not the row's own action (e.g. "Remove from my events" must stay readable, US-07). */
+.ui-list-row--dimmed .ui-list-row__leading,
+.ui-list-row--dimmed .ui-list-row__title,
+.ui-list-row--dimmed .ui-list-row__meta { opacity: 0.6; }
 .ui-list-row__leading { flex-shrink: 0; }
 .ui-list-row__main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .ui-list-row__title { font: var(--font-title-m); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

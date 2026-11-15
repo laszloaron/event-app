@@ -181,3 +181,6 @@
   box-shadow: var(--elevation-1);
 }
 .d-request__actions { display: flex; justify-content: flex-end; gap: var(--space-s); margin-top: var(--space-m); }
+
+/* Two date fields side by side in the filter sheet (§5.5 "Pick dates…"). */
+.d-filters__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m); margin-top: var(--space-m); }

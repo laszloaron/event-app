@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router";
 import type { OverlayState } from "../../routing/useOpenEvent";
-import { CalendarDays, Inbox, LogIn, Map as MapIcon, MapPinned, UserRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, Inbox, LogIn, Map as MapIcon, MapPinned, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
 import { CountBadge } from "../ui";
 import { useSession } from "../../session/session";
 import "./layout.css";
@@ -12,23 +12,18 @@ interface NavItem {
   badge?: number;
 }
 
-/**
- * The menu items. Roles are not checked yet: logged in = the attendee/organizer tabs, logged out =
- * Discover + Log in (§4). The admin Moderation page is reachable from Account until roles exist.
- */
+/** The menu items per role (ui_design.md §4 "Tabs per role"; US-07/19/22): only links the user can open. */
 function useNavItems(): NavItem[] {
   const { user } = useSession();
-  if (!user) {
-    return [
-      { to: "/", label: "Discover", icon: MapIcon },
-      { to: "/login", label: "Log in", icon: LogIn },
-    ];
-  }
+  const discover: NavItem = { to: "/", label: "Discover", icon: MapIcon };
+  if (!user) return [discover, { to: "/login", label: "Log in", icon: LogIn }];
+  const account: NavItem = { to: "/account", label: "Account", icon: UserRound };
+  if (user.role === "admin") return [discover, { to: "/admin/requests", label: "Moderation", icon: ShieldCheck }, account];
   return [
-    { to: "/", label: "Discover", icon: MapIcon },
+    discover,
     { to: "/my-events", label: "My events", icon: CalendarDays },
     { to: "/inbox", label: "Inbox", icon: Inbox, badge: user.unread_count },
-    { to: "/account", label: "Account", icon: UserRound },
+    account,
   ];
 }
 
@@ -41,7 +36,9 @@ function useActiveTab(): string {
   const path = ((location.state as OverlayState | null)?.background ?? location).pathname;
   const isCard = path.startsWith("/events/") && !path.endsWith("/edit") && path !== "/events/new";
   if (path === "/" || path === "/list" || isCard) return "/";
-  if (path.startsWith("/account") || path.startsWith("/admin") || path.startsWith("/events/")) return "/account";
+  if (path.startsWith("/admin")) return "/admin/requests";
+  if (path === "/register") return "/login";
+  if (path.startsWith("/account") || path.startsWith("/events/")) return "/account";
   return path;
 }
 

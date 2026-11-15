@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "danger-outline";
@@ -45,5 +45,25 @@ export function Button({
       {leading && <span className="ui-button__icon">{leading}</span>}
       {children}
     </button>
+  );
+}
+
+interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: ReactNode;
+}
+
+/**
+ * An external link that looks like a Button, opened in a new tab (US-08/14 "opens it externally").
+ * A real `<a>`, not a button with `window.open`, so the browser treats it as a link (middle-click, copy).
+ */
+export function ButtonLink({ variant = "secondary", size = "m", icon, className = "", children, ...rest }: ButtonLinkProps) {
+  const classes = ["ui-button", `ui-button--${variant}`, size !== "m" && `ui-button--${size}`, className].filter(Boolean).join(" ");
+  return (
+    <a className={classes} target="_blank" rel="noopener noreferrer" {...rest}>
+      {icon && <span className="ui-button__icon">{icon}</span>}
+      {children}
+    </a>
   );
 }

@@ -4,19 +4,23 @@ import type { PriceOut, SportOut } from "../../api/schema";
 import { Tag } from "../ui";
 import { formatPrice, formatRange, isForeignZone, zoneCity } from "../../utils/format";
 
-/** One icon per sport, picked by `Sport.icon` (§2.5); unknown sports fall back to a trophy. */
+/**
+ * One icon per sport (§2.5), picked by `Sport.icon`, else by the slug: the seeded sports have an
+ * empty `icon` (events/fixtures/sports.json). Unknown sports fall back to a trophy.
+ */
 const SPORT_ICONS: Record<string, LucideIcon> = {
   football: Goal,
   fencing: Swords,
   running: Footprints,
   pentathlon: Medal,
   swimming: Waves,
+  "water-polo": Waves,
   cycling: Bike,
   fitness: Dumbbell,
 };
 
 export function SportIcon({ sport, size = 20 }: { sport: SportOut | null; size?: number }) {
-  const Icon = (sport && SPORT_ICONS[sport.icon]) || Trophy;
+  const Icon = (sport && (SPORT_ICONS[sport.icon] ?? SPORT_ICONS[sport.slug])) || Trophy;
   return <Icon size={size} aria-hidden />;
 }
 

@@ -7,16 +7,58 @@ import { formatAgo } from "../../utils/format";
 
 interface Change {
   field: string;
-  old: string;
-  new: string;
+  old: unknown;
+  new: unknown;
+}
+
+/** Form labels for the backend's field names (events.services._snapshot), so messages read like the form. */
+const FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  sport: "Sport",
+  start_at: "Start",
+  end_at: "End",
+  venue_name: "Venue",
+  venue_address: "Address",
+  lat: "Map pin",
+  lng: "Map pin",
+  timezone: "Time zone",
+  price_amount: "Price",
+  price_currency: "Currency",
+  description: "Description",
+  sport_explainer: "Sport explainer",
+  ticket_url: "Ticket link",
+  registration_url: "Registration link",
+  capacity: "Capacity",
+  social_links: "Social links",
+};
+
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+/** Display form of one old/new value: times in the reader's zone, empty → "none", links by label. */
+function displayValue(value: unknown, field: string): string {
+  if (value === null || value === undefined || value === "") {
+    if (field === "price_amount") return "Free";
+    return field === "capacity" ? "unlimited" : "none";
+  }
+  if (typeof value === "string" && ISO_TIME.test(value)) {
+    return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  }
+  if (typeof value === "number") return field === "lat" || field === "lng" ? value.toFixed(4) : String(value);
+  if (Array.isArray(value)) {
+    const labels = value.map((item) => (typeof item === "object" && item !== null && "label" in item ? String(item.label) : String(item)));
+    return labels.length ? labels.join(", ") : "none";
+  }
+  return String(value);
 }
 
 function readChanges(value: unknown): Change[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is Change => typeof item === "object" && item !== null && "field" in item);
+  const items = value.filter((item): item is Change => typeof item === "object" && item !== null && "field" in item);
+  // Latitude and longitude change together when the pin moves: show one "Map pin" line.
+  return items.filter((item) => !(item.field === "lng" && items.some((other) => other.field === "lat")));
 }
 
-/** "Start · ~~14:00~~ → 16:00" for each changed field (US-22). */
+/** "Start · ~~Sat 14:00~~ → Sat 16:00" for each changed field (US-22, US-17). */
 export function ChangeList({ changes }: { changes: unknown }) {
   const items = readChanges(changes);
   if (!items.length) return null;
@@ -24,9 +66,15 @@ export function ChangeList({ changes }: { changes: unknown }) {
     <dl className="d-changes">
       {items.map((change) => (
         <div key={change.field} className="d-changes__row">
-          <dt>{change.field}</dt>
+          <dt>{FIELD_LABELS[change.field] ?? change.field}</dt>
           <dd>
-            <del>{String(change.old)}</del> → <strong>{String(change.new)}</strong>
+            {change.field === "lat" ? (
+              <strong>moved</strong>
+            ) : (
+              <>
+                <del>{displayValue(change.old, change.field)}</del> → <strong>{displayValue(change.new, change.field)}</strong>
+              </>
+            )}
           </dd>
         </div>
       ))}
@@ -37,8 +85,8 @@ export function ChangeList({ changes }: { changes: unknown }) {
 const KIND_TEXT: Record<NotificationOut["kind"], { icon: ReactNode; text: (title: string) => string }> = {
   event_changed: { icon: <Pencil size={20} />, text: (title) => `${title} was changed` },
   event_cancelled: { icon: <CalendarX2 size={20} />, text: (title) => `${title} was cancelled` },
-  admin_edited: { icon: <ShieldAlert size={20} />, text: (title) => `An admin edited ${title}` },
-  admin_cancelled: { icon: <ShieldAlert size={20} />, text: (title) => `An admin cancelled ${title}` },
+  admin_edited: { icon: <ShieldAlert size={20} />, text: (title) => `An admin edited your event ${title}` },
+  admin_cancelled: { icon: <ShieldAlert size={20} />, text: (title) => `An admin cancelled your event ${title}` },
   organizer_approved: { icon: <UserCheck size={20} />, text: () => "Your organizer request was approved" },
   organizer_rejected: { icon: <UserX size={20} />, text: () => "Your organizer request was rejected" },
 };
@@ -69,6 +117,8 @@ export function InboxRow({ message, expanded, onToggle, onOpenEvent }: InboxRowP
         <div className="d-inbox-row__body">
           <ChangeList changes={message.payload.changes} />
           {reason && <blockquote className="d-quote">{reason}</blockquote>}
+          {message.kind === "organizer_approved" && <p className="t-body-s">You can now create events from your Account.</p>}
+          {message.kind === "organizer_rejected" && <p className="t-body-s">You can send a new request later from your Account.</p>}
           {message.event_id !== null && (
             <Button variant="secondary" size="s" onClick={() => onOpenEvent(message.event_id!)}>
               Open event
@@ -80,8 +130,15 @@ export function InboxRow({ message, expanded, onToggle, onOpenEvent }: InboxRowP
   );
 }
 
-/** Admin: one pending organizer request with Reject / Approve (US-21). Buttons do nothing yet. */
-export function RequestCard({ request }: { request: OrganizerRequestAdminOut }) {
+interface RequestCardProps {
+  request: OrganizerRequestAdminOut;
+  busy: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+}
+
+/** Admin: one pending organizer request with the user's account details and Reject / Approve (US-21). */
+export function RequestCard({ request, busy, onApprove, onReject }: RequestCardProps) {
   const joined = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric" }).format(new Date(request.user.date_joined));
   return (
     <article className="d-request">
@@ -91,8 +148,12 @@ export function RequestCard({ request }: { request: OrganizerRequestAdminOut }) 
       </p>
       <p className="t-body-s">Requested {formatAgo(request.created_at)}</p>
       <div className="d-request__actions">
-        <Button variant="danger-outline">Reject</Button>
-        <Button>Approve</Button>
+        <Button variant="danger-outline" disabled={busy} onClick={onReject}>
+          Reject
+        </Button>
+        <Button loading={busy} onClick={onApprove}>
+          Approve
+        </Button>
       </div>
     </article>
   );

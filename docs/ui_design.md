@@ -263,11 +263,11 @@ Opens as a **Sheet** (phone: from the bottom, 92 % height; desktop: right panel 
 External link buttons show a small ↗ icon so users know they leave the app.
 
 ### 5.4 City prompt (US-04)
-Dialog (cannot be dismissed without a city) over a greyed map: icon 📍, title "Where are you looking for events?", TextField "City" (autofocus, placeholder "e.g. Budapest"), `primary l fullWidth` "Show events". Error under the field: "City not found". Later reachable via a "📍 Budapest ▾" chip at the start of FilterChips.
+Dialog (cannot be dismissed without a city) over a greyed map: icon 📍, title "Where are you looking for events?", TextField "City" (autofocus, placeholder "e.g. Budapest"), `primary l fullWidth` "Show events". Error under the field: "City not found". Later reachable via a "📍 Budapest ▾" chip at the start of FilterChips; opened from the chip it can be closed and also offers `secondary` "Use my location".
 
 ### 5.5 Filter sheet (US-02)
 Opened by the filter IconButton (all filters in one place) — each chip in FilterChips opens just its own section in a small sheet.
-- **Date**: Chips `Today` `Tomorrow` `This weekend` `Pick dates…` (shows two DateTimeFields).
+- **Date**: Chips `Today` `Tomorrow` `This weekend` `Pick dates…` (shows two date fields, From / To: the filter works on whole days).
 - **Sport**: multi-select Chips with sport icons, wrapping grid.
 - **Price**: SegmentedControl `Any | Free | Paid`; when Paid, a "Max price" TextField with currency suffix.
 - **Distance**: slider 1–50 km with value label "10 km" above the thumb.
