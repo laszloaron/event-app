@@ -6,6 +6,7 @@ EventMap is a mobile-first web app for discovering local sports events on a map.
 - [docs/user_stories.md](docs/user_stories.md): US-01…US-25, acceptance criteria, form fields, decisions. **Behaviour.**
 - [docs/architecture.md](docs/architecture.md): containers, data model, API endpoints and the reason for each. **Structure.**
 - [docs/specification.md](docs/specification.md): original goals, roles and acceptance criteria.
+- [docs/ui_design.md](docs/ui_design.md): style tokens, reusable components, screen layouts. **Look.**
 - `backend/AGENTS.md`, `frontend/AGENTS.md`: side-specific rules. This file holds only what applies to the whole repo.
 
 ## Working rules
