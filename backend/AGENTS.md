@@ -4,9 +4,16 @@ Applies on top of the root [AGENTS.md](../AGENTS.md). Data model and endpoints: 
 
 ## Layout
 - `config/`: settings (all values from env), `urls.py`, `api.py` (root `NinjaAPI` at `/api/v1`; mount each app's router here), `health.py` (unversioned `/api/health`), `logging_config.py`.
-- `common/`: abstract `CreatedAtModel` / `TimeStampedModel`. Shared permission helpers and the diff util go here too.
-- Domain apps: `accounts`, `events`, `inbox`, `moderation`. Create `selectors.py` / `services.py` / `schemas.py` / `views.py` only when a story needs them; no empty placeholder files.
-- `test/`: every backend test, `test_<layer>_<app>.py` (e.g. `test_models_events.py`, later `test_services_events.py`).
+- `common/`: abstract `CreatedAtModel` / `TimeStampedModel`, `errors.py` (typed `DomainError`s → HTTP status), `permissions.py` (`require_*`), `diff.py` (`diff_fields`), `schemas.py` (`ErrorOut`, `OUT_MODEL_CONFIG`), `management/commands/export_openapi.py`.
+- Domain apps: `accounts`, `events`, `inbox`, `moderation`, each with `selectors.py` / `services.py` / `schemas.py` / `views.py`. The full interface (typed signatures + docstrings with Args/Returns/Raises) is defined for every endpoint; a body still raising `NotImplementedError` is not yet implemented. Keep the signature and docstring when implementing; change them only together with architecture.md.
+- Services/selectors raise `common.errors` types, never return HTTP responses; views never catch them (the handler in `config/api.py` does).
+
+## Schemas
+- Response schemas: `class XOut(ModelSchema)` with `model_config = OUT_MODEL_CONFIG` and `Meta.fields` listing model columns. Subclass `ModelSchema` **directly**: Ninja skips model-field generation for subclasses of a subclass.
+- Non-column values are declared fields: filled by a selector annotation, a model property or a `resolve_*` static method (pure mapping, no queries). Don't also list a declared field in `Meta.fields` (Ninja deprecation warning).
+- Input forms and non-model shapes (`PriceOut`, `ViewerFlagsOut`, query filters) stay plain `Schema`s.
+- After changing any schema or endpoint, run `scripts/gen-api.sh` (Windows: `scripts\gen-api.ps1`) and commit `frontend/openapi.json` + `frontend/src/api/schema.d.ts`; the frontend build fails on stale types.
+- `test/`: every backend test, `test_<layer>_<app>.py` (e.g. `test_models_events.py`, `test_api_events.py`); shared builders in `test/helpers.py`.
 
 ## Model conventions
 - Text fields: `blank=True`, empty value `""`, never `null=True`.
@@ -23,4 +30,5 @@ Applies on top of the root [AGENTS.md](../AGENTS.md). Data model and endpoints: 
 
 ## Tests
 - Run: `docker compose exec backend python manage.py test`.
+- `test_api_*.py` classes tagged `api_contract` were written before the code they test. Until a story is implemented, run the rest with `--exclude-tag=api_contract`. When you implement a story, remove the tag from its test class and make the tests pass.
 - The test DB is created by the Postgres superuser from `.env`; it needs PostGIS, so tests run against the `db` container, not SQLite.

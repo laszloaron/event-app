@@ -1,0 +1,3479 @@
+{
+  "components": {
+    "schemas": {
+      "AttendanceOut": {
+        "description": "State of the card's attendance controls after an RSVP/paid action (US-06/08).\n\nPlain schema: built from `events.selectors.get_attendance`, not from one model row.",
+        "properties": {
+          "attendee_count": {
+            "title": "Attendee Count",
+            "type": "integer"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          },
+          "has_paid": {
+            "title": "Has Paid",
+            "type": "boolean"
+          },
+          "is_going": {
+            "title": "Is Going",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "event_id",
+          "attendee_count",
+          "is_going",
+          "has_paid"
+        ],
+        "title": "AttendanceOut",
+        "type": "object"
+      },
+      "AuditLogOut": {
+        "description": "One audit entry: who, when, what changed and why (US-17/18/21).\n\n`actor_username` is an annotation from `list_audit_log`.",
+        "properties": {
+          "action": {
+            "enum": [
+              "event_edit",
+              "event_cancel",
+              "organizer_approve",
+              "organizer_reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "integer"
+          },
+          "actor_username": {
+            "title": "Actor Username",
+            "type": "string"
+          },
+          "changes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "target_id": {
+            "title": "Target Id",
+            "type": "integer"
+          },
+          "target_type": {
+            "maxLength": 64,
+            "title": "Target Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "target_type",
+          "target_id",
+          "reason",
+          "created_at",
+          "actor_id",
+          "actor_username",
+          "changes"
+        ],
+        "title": "AuditLogOut",
+        "type": "object"
+      },
+      "CancelIn": {
+        "description": "Cancel body. `reason` is required for admins (US-18), optional for organizers (US-10).",
+        "properties": {
+          "reason": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "CancelIn",
+        "type": "object"
+      },
+      "CityOut": {
+        "description": "A known city centre for the location-denied fallback (US-04).",
+        "properties": {
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "title": "Lng",
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "timezone",
+          "lat",
+          "lng"
+        ],
+        "title": "CityOut",
+        "type": "object"
+      },
+      "DraftOut": {
+        "description": "One row of \"My drafts\" (US-25).",
+        "properties": {
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "title": {
+            "maxLength": 100,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "start_at",
+          "updated_at",
+          "sport"
+        ],
+        "title": "DraftOut",
+        "type": "object"
+      },
+      "ErrorOut": {
+        "description": "Body of every error response (architecture.md \u00a73): `{detail, field?}`.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorOut",
+        "type": "object"
+      },
+      "EventCreateIn": {
+        "description": "`POST /events` body: the form plus which button was pressed (US-09/25).",
+        "properties": {
+          "action": {
+            "enum": [
+              "draft",
+              "publish"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "price_amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Amount"
+          },
+          "price_currency": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Currency"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
+          },
+          "social_links": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SocialLinkSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Social Links"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport"
+          },
+          "sport_explainer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport Explainer"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "ticket_url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Url"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "venue_address": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Address"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "EventCreateIn",
+        "type": "object"
+      },
+      "EventDetailOut": {
+        "description": "The full event card (US-05/11/14). Draft fields may be null (owner-only view, US-25).\n\n`attendee_count` is an annotation from `get_event_for_viewer`; `viewer` is attached\nto the event by the view from `get_viewer_flags` (it depends on the request user).",
+        "properties": {
+          "attendee_count": {
+            "title": "Attendee Count",
+            "type": "integer"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "is_cancelled": {
+            "title": "Is Cancelled",
+            "type": "boolean"
+          },
+          "is_ended": {
+            "title": "Is Ended",
+            "type": "boolean"
+          },
+          "is_free": {
+            "title": "Is Free",
+            "type": "boolean"
+          },
+          "is_ongoing": {
+            "title": "Is Ongoing",
+            "type": "boolean"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "organizer": {
+            "$ref": "#/components/schemas/OrganizerOut"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "registration_url": {
+            "maxLength": 500,
+            "title": "Registration Url",
+            "type": "string"
+          },
+          "social_links": {
+            "items": {
+              "$ref": "#/components/schemas/SocialLinkSchema"
+            },
+            "title": "Social Links",
+            "type": "array"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sport_explainer": {
+            "title": "Sport Explainer",
+            "type": "string"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "status": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "published",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "ticket_url": {
+            "maxLength": 500,
+            "title": "Ticket Url",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 100,
+            "title": "Title",
+            "type": "string"
+          },
+          "venue_address": {
+            "maxLength": 300,
+            "title": "Venue Address",
+            "type": "string"
+          },
+          "venue_name": {
+            "maxLength": 200,
+            "title": "Venue Name",
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/ViewerFlagsOut"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "title",
+          "start_at",
+          "end_at",
+          "timezone",
+          "venue_name",
+          "venue_address",
+          "description",
+          "sport_explainer",
+          "ticket_url",
+          "registration_url",
+          "capacity",
+          "published_at",
+          "organizer",
+          "sport",
+          "lat",
+          "lng",
+          "price",
+          "is_free",
+          "social_links",
+          "attendee_count",
+          "is_cancelled",
+          "is_ongoing",
+          "is_ended",
+          "viewer"
+        ],
+        "title": "EventDetailOut",
+        "type": "object"
+      },
+      "EventListItemOut": {
+        "description": "One marker / list row (US-12/23): only what the map and the list show.\n\nPublished events always have start/end/location, so those are non-null here.\n`distance_km` comes from the `distance` annotation of `search_events`.",
+        "properties": {
+          "distance_km": {
+            "title": "Distance Km",
+            "type": "number"
+          },
+          "end_at": {
+            "format": "date-time",
+            "title": "End At",
+            "type": "string"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "is_free": {
+            "title": "Is Free",
+            "type": "boolean"
+          },
+          "is_ongoing": {
+            "title": "Is Ongoing",
+            "type": "boolean"
+          },
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "title": "Lng",
+            "type": "number"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sport": {
+            "$ref": "#/components/schemas/SportOut"
+          },
+          "start_at": {
+            "format": "date-time",
+            "title": "Start At",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 100,
+            "title": "Title",
+            "type": "string"
+          },
+          "venue_name": {
+            "maxLength": 200,
+            "title": "Venue Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "timezone",
+          "venue_name",
+          "sport",
+          "start_at",
+          "end_at",
+          "lat",
+          "lng",
+          "price",
+          "is_free",
+          "is_ongoing",
+          "distance_km"
+        ],
+        "title": "EventListItemOut",
+        "type": "object"
+      },
+      "EventListOut": {
+        "description": "Map and list share this response, so `count == markers == rows` (AC 2).",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventListItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "items"
+        ],
+        "title": "EventListOut",
+        "type": "object"
+      },
+      "EventPatchIn": {
+        "description": "`PATCH /events/{id}` body; only sent fields change (`exclude_unset`).",
+        "properties": {
+          "capacity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "price_amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Amount"
+          },
+          "price_currency": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Currency"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
+          },
+          "social_links": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SocialLinkSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Social Links"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport"
+          },
+          "sport_explainer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport Explainer"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "ticket_url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Url"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "venue_address": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Address"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          }
+        },
+        "title": "EventPatchIn",
+        "type": "object"
+      },
+      "EventSearchQuery": {
+        "description": "Query string of `GET /events` (US-01/02/03/23/24).\n\nThe client derives \"today\" / \"this weekend\" in venue local time and sends ISO bounds.",
+        "properties": {
+          "date_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          },
+          "lat": {
+            "maximum": 90,
+            "minimum": -90,
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "maximum": 180,
+            "minimum": -180,
+            "title": "Lng",
+            "type": "number"
+          },
+          "max_price": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Price"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "enum": [
+                  "free",
+                  "paid"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "radius_km": {
+            "default": 10,
+            "exclusiveMinimum": 0,
+            "maximum": 50,
+            "title": "Radius Km",
+            "type": "number"
+          },
+          "sport": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sport",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "EventSearchQuery",
+        "type": "object"
+      },
+      "Input": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Size"
+          }
+        },
+        "title": "Input",
+        "type": "object"
+      },
+      "LoginIn": {
+        "description": "Login form.",
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginIn",
+        "type": "object"
+      },
+      "MeOut": {
+        "description": "Everything the SPA needs to show/hide role-dependent UI (US-07/09/19/20/22).\n\nThe two extra fields are not on `User`: the view supplies them from\n`inbox.selectors.count_unread` and `accounts.selectors.get_latest_organizer_request`.",
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "title": "Email Address",
+            "type": "string"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "organizer_request_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Status"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "default": "attendee",
+            "enum": [
+              "attendee",
+              "organizer",
+              "admin"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "unread_count": {
+            "title": "Unread Count",
+            "type": "integer"
+          },
+          "username": {
+            "description": "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+            "maxLength": 150,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "role",
+          "unread_count",
+          "organizer_request_status"
+        ],
+        "title": "MeOut",
+        "type": "object"
+      },
+      "MyEventOut": {
+        "description": "One row of \"My events\" (US-07): includes cancelled events with a tag.\n\n`has_paid` is an annotation from `list_my_events`.",
+        "properties": {
+          "end_at": {
+            "format": "date-time",
+            "title": "End At",
+            "type": "string"
+          },
+          "has_paid": {
+            "title": "Has Paid",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "is_cancelled": {
+            "title": "Is Cancelled",
+            "type": "boolean"
+          },
+          "is_free": {
+            "title": "Is Free",
+            "type": "boolean"
+          },
+          "is_ongoing": {
+            "title": "Is Ongoing",
+            "type": "boolean"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sport": {
+            "$ref": "#/components/schemas/SportOut"
+          },
+          "start_at": {
+            "format": "date-time",
+            "title": "Start At",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 100,
+            "title": "Title",
+            "type": "string"
+          },
+          "venue_name": {
+            "maxLength": 200,
+            "title": "Venue Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "timezone",
+          "venue_name",
+          "sport",
+          "start_at",
+          "end_at",
+          "price",
+          "is_free",
+          "is_ongoing",
+          "is_cancelled",
+          "has_paid"
+        ],
+        "title": "MyEventOut",
+        "type": "object"
+      },
+      "NotificationOut": {
+        "description": "One inbox message. `event_id` links to the event card (US-11/22).\n\n`payload` shape by kind: `event_changed`/`admin_edited` \u2192 `{\"changes\": [{field, old, new}]}`;\n`event_cancelled`/`admin_cancelled` \u2192 `{\"reason\": str}`; organizer decisions \u2192 `{}`.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "event_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Title"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "is_read": {
+            "default": false,
+            "title": "Is Read",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "event_cancelled",
+              "event_changed",
+              "admin_edited",
+              "admin_cancelled",
+              "organizer_approved",
+              "organizer_rejected"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "is_read",
+          "created_at",
+          "event_id",
+          "event_title",
+          "payload"
+        ],
+        "title": "NotificationOut",
+        "type": "object"
+      },
+      "OkOut": {
+        "description": "Body of write endpoints that have nothing else to return.",
+        "properties": {
+          "ok": {
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "title": "OkOut",
+        "type": "object"
+      },
+      "OrganizerOut": {
+        "description": "Public organizer identity shown on the card (US-05).",
+        "properties": {
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "username": {
+            "description": "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+            "maxLength": 150,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username"
+        ],
+        "title": "OrganizerOut",
+        "type": "object"
+      },
+      "OrganizerRequestAdminOut": {
+        "description": "One organizer request in the admin queue (US-21).",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Id"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "status": {
+            "default": "pending",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/RequestingUserOut"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "decided_at",
+          "decided_by_id",
+          "user"
+        ],
+        "title": "OrganizerRequestAdminOut",
+        "type": "object"
+      },
+      "OrganizerRequestFilter": {
+        "description": "Query string of the admin queue; default shows what still needs a decision.",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "enum": [
+                  "pending",
+                  "approved",
+                  "rejected"
+                ],
+                "title": "Status",
+                "type": "string"
+              }
+            ],
+            "default": "pending"
+          }
+        },
+        "title": "OrganizerRequestFilter",
+        "type": "object"
+      },
+      "OrganizerRequestOut": {
+        "description": "The user's own organizer request (US-20).",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "status": {
+            "default": "pending",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "decided_at"
+        ],
+        "title": "OrganizerRequestOut",
+        "type": "object"
+      },
+      "PagedNotificationOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "count"
+        ],
+        "title": "PagedNotificationOut",
+        "type": "object"
+      },
+      "PriceOut": {
+        "description": "An amount with its currency; absent (null) means \"Free\". Not a model: two columns.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "title": "PriceOut",
+        "type": "object"
+      },
+      "RegisterIn": {
+        "description": "Registration form.\n\nEmail format and password strength are checked in `register_user` with Django's own\nvalidators, so no extra dependency (pydantic `EmailStr` needs `email-validator`).",
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "title": "RegisterIn",
+        "type": "object"
+      },
+      "RequestingUserOut": {
+        "description": "Account details an admin sees next to a request (US-21).",
+        "properties": {
+          "date_joined": {
+            "format": "date-time",
+            "title": "Date Joined",
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 254,
+            "title": "Email Address",
+            "type": "string"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "username": {
+            "description": "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+            "maxLength": 150,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "date_joined"
+        ],
+        "title": "RequestingUserOut",
+        "type": "object"
+      },
+      "SocialLinkSchema": {
+        "description": "One organizer social link, e.g. `{\"label\": \"Instagram\", \"url\": \"https://...\"}`.\n\nPlain schema: it describes items inside the `Event.social_links` JSON column.",
+        "properties": {
+          "label": {
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ],
+        "title": "SocialLinkSchema",
+        "type": "object"
+      },
+      "SportOut": {
+        "description": "One sport for the filter dropdown and the form (spec \u00a75).",
+        "properties": {
+          "icon": {
+            "maxLength": 64,
+            "title": "Icon",
+            "type": "string"
+          },
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "kind": {
+            "default": "sport",
+            "enum": [
+              "sport"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 64,
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 64,
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "kind",
+          "icon"
+        ],
+        "title": "SportOut",
+        "type": "object"
+      },
+      "Status": {
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "UnreadCountOut": {
+        "description": "Inbox badge (US-22). Plain schema: a count, not a model row.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "UnreadCountOut",
+        "type": "object"
+      },
+      "UserOut": {
+        "description": "Public view of the logged-in user, returned after register/login.",
+        "properties": {
+          "id": {
+            "title": "ID",
+            "type": "integer"
+          },
+          "role": {
+            "default": "attendee",
+            "enum": [
+              "attendee",
+              "organizer",
+              "admin"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "username": {
+            "description": "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+            "maxLength": 150,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "role"
+        ],
+        "title": "UserOut",
+        "type": "object"
+      },
+      "ViewerFlagsOut": {
+        "description": "What the current viewer may do; the SPA only hides/shows buttons (US-14/16/19).\n\nPlain schema: mirrors the `events.selectors.ViewerFlags` dataclass, not a model.",
+        "properties": {
+          "can_cancel": {
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
+          "can_delete": {
+            "title": "Can Delete",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_mark_paid": {
+            "title": "Can Mark Paid",
+            "type": "boolean"
+          },
+          "can_publish": {
+            "title": "Can Publish",
+            "type": "boolean"
+          },
+          "can_rsvp": {
+            "title": "Can Rsvp",
+            "type": "boolean"
+          },
+          "has_paid": {
+            "title": "Has Paid",
+            "type": "boolean"
+          },
+          "is_going": {
+            "title": "Is Going",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_going",
+          "has_paid",
+          "can_rsvp",
+          "can_mark_paid",
+          "can_edit",
+          "can_cancel",
+          "can_publish",
+          "can_delete"
+        ],
+        "title": "ViewerFlagsOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "SessionAuth": {
+        "in": "cookie",
+        "name": "sessionid",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "",
+    "title": "EventMap API",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/admin/audit-log": {
+      "get": {
+        "description": "Return the admin audit trail, newest first (US-17/18/21).\n\nCalls `common.permissions.require_role(ADMIN)` and `moderation.selectors.list_audit_log`.\n\nReturns:\n    200 with every entry.\n\nRaises:\n    PermissionDeniedError: 403 not an admin.",
+        "operationId": "moderation_views_list_audit_log",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditLogOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Audit Log",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/organizer-requests": {
+      "get": {
+        "description": "List organizer requests with the requesting user's details (US-21).\n\nCalls `common.permissions.require_role(ADMIN)` and\n`moderation.selectors.list_organizer_requests`.\n\nReturns:\n    200 with the requests (default `status=pending`).\n\nRaises:\n    PermissionDeniedError: 403 not an admin.",
+        "operationId": "moderation_views_list_organizer_requests",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "pending",
+                    "approved",
+                    "rejected"
+                  ],
+                  "title": "Status",
+                  "type": "string"
+                }
+              ],
+              "default": "pending"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizerRequestAdminOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Organizer Requests",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/organizer-requests/{request_id}/approve": {
+      "post": {
+        "description": "Approve a request: role change + inbox message + audit entry (US-21).\n\nCalls `common.permissions.require_role(ADMIN)` and\n`moderation.services.approve_organizer_request`.\n\nReturns:\n    200 with the approved request.\n\nRaises:\n    PermissionDeniedError: 403 not an admin.\n    NotFoundError: 404 unknown request.\n    ConflictError: 409 already decided.",
+        "operationId": "moderation_views_approve_organizer_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizerRequestAdminOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approve Organizer Request",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/organizer-requests/{request_id}/reject": {
+      "post": {
+        "description": "Reject a request: inbox message + audit entry; user stays attendee (US-21).\n\nCalls `common.permissions.require_role(ADMIN)` and\n`moderation.services.reject_organizer_request`.\n\nReturns:\n    200 with the rejected request.\n\nRaises:\n    PermissionDeniedError: 403 not an admin.\n    NotFoundError: 404 unknown request.\n    ConflictError: 409 already decided.",
+        "operationId": "moderation_views_reject_organizer_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizerRequestAdminOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reject Organizer Request",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "description": "Set the CSRF cookie the SPA echoes back in the `X-CSRFToken` header.\n\nReturns:\n    200 `{ok: true}`; the cookie is the real payload.",
+        "operationId": "accounts_views_get_csrf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Get Csrf",
+        "tags": [
+          "auth & account"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "description": "Start a session (US-06 AC \"redirected to login\" lands here).\n\nCalls `accounts.services.login_user`.\n\nReturns:\n    200 with the logged-in user.\n\nRaises:\n    AuthenticationFailedError: 401 wrong credentials.",
+        "operationId": "accounts_views_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth & account"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "description": "End the current session.\n\nCalls `accounts.services.logout_user`.\n\nReturns:\n    200 `{ok: true}`.\n\nRaises:\n    401 (Ninja `django_auth`) when not logged in.",
+        "operationId": "accounts_views_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Logout",
+        "tags": [
+          "auth & account"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "description": "Create an attendee account and log it in.\n\nCalls `accounts.services.register_user` then `login_user`.\n\nReturns:\n    201 with the new user.\n\nRaises:\n    FieldValidationError: 422 taken username, invalid email or weak password.",
+        "operationId": "accounts_views_register",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "auth & account"
+        ]
+      }
+    },
+    "/api/v1/cities/lookup": {
+      "get": {
+        "description": "Resolve a typed city name to its centre (US-04).\n\nCalls `events.selectors.lookup_city`.\n\nReturns:\n    200 `{name, lat, lng, timezone}`.\n\nRaises:\n    NotFoundError: 404 `{\"detail\": \"City not found\"}`.",
+        "operationId": "events_views_lookup_city",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "Lookup City",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "description": "Return the events for the map and the List tab (US-01/02/03/12/23/24).\n\nCalls `events.selectors.search_events`. Not paginated: `count` always equals\n`len(items)` (AC 2). An empty result is a normal 200 (US-03).\n\nReturns:\n    200 `{count, items}`, ongoing first then by start time.\n\nRaises:\n    422 (Ninja validation) missing `lat`/`lng` or `radius_km` outside (0, 50].",
+        "operationId": "events_views_search_events",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lat",
+            "required": true,
+            "schema": {
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Lat",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lng",
+            "required": true,
+            "schema": {
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Lng",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "radius_km",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "exclusiveMinimum": 0,
+              "maximum": 50,
+              "title": "Radius Km",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sport",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Sport",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "price",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "free",
+                    "paid"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Price"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_price",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Price"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventListOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Search Events",
+        "tags": [
+          "events"
+        ]
+      },
+      "post": {
+        "description": "Save a new event as draft or publish it (US-09/25).\n\nCalls `common.permissions.require_role(ORGANIZER)` and `events.services.create_event`.\n\nReturns:\n    201 with the card of the new event.\n\nRaises:\n    PermissionDeniedError: 403 not an organizer (attendee or admin).\n    FieldValidationError: 422 `{detail, field}`; on \"draft\" only format errors,\n        on \"publish\" also missing required fields.",
+        "operationId": "events_views_create_event",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Event",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/{event_id}": {
+      "delete": {
+        "description": "Delete a draft (US-25). Published events must be cancelled instead.\n\nCalls `events.services.delete_draft`.\n\nReturns:\n    204 no content.\n\nRaises:\n    NotFoundError: 404 unknown event, or a draft not owned by the user.\n    BusinessRuleError: 400 not a draft.",
+        "operationId": "events_views_delete_draft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Delete Draft",
+        "tags": [
+          "events"
+        ]
+      },
+      "get": {
+        "description": "Return the full event card with viewer flags (US-05/11/14).\n\nCalls `events.selectors.get_event_for_viewer` and `get_viewer_flags`.\n\nReturns:\n    200 with the card; cancelled events included with `is_cancelled=true`.\n\nRaises:\n    NotFoundError: 404 unknown id, or a draft the viewer does not own (US-25).",
+        "operationId": "events_views_get_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "Get Event",
+        "tags": [
+          "events"
+        ]
+      },
+      "patch": {
+        "description": "Edit an event: owner (US-16/25) or admin (US-17).\n\nCalls `events.services.update_event` with `payload.dict(exclude_unset=True)`.\n\nReturns:\n    200 with the updated card.\n\nRaises:\n    NotFoundError: 404 unknown event, or a draft not owned by the user.\n    PermissionDeniedError: 403 neither owner nor admin.\n    BusinessRuleError: 400 cancelled or ended.\n    FieldValidationError: 422 validation failure or capacity below RSVPs.",
+        "operationId": "events_views_update_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Event",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/{event_id}/cancel": {
+      "post": {
+        "description": "Cancel an event: owner (US-10) or admin with a reason (US-18).\n\nCalls `events.services.cancel_event`.\n\nReturns:\n    200 with the card, `is_cancelled=true`.\n\nRaises:\n    NotFoundError: 404 unknown event or draft.\n    PermissionDeniedError: 403 neither owner nor admin.\n    BusinessRuleError: 400 already cancelled or ended.\n    FieldValidationError: 422 (field=\"reason\") admin without a reason.",
+        "operationId": "events_views_cancel_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel Event",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/{event_id}/paid": {
+      "delete": {
+        "description": "Untick \"I have paid\" (US-08); the RSVP is left as it is.\n\nCalls `common.permissions.require_not_admin`, `events.services.unmark_paid`,\nthen `events.selectors.get_attendance`.\n\nReturns:\n    200 with `has_paid=false`.\n\nRaises:\n    PermissionDeniedError: 403 admin.\n    NotFoundError: 404 unknown event.",
+        "operationId": "events_views_unmark_paid",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Unmark Paid",
+        "tags": [
+          "events"
+        ]
+      },
+      "put": {
+        "description": "Tick \"I have paid\" (US-08); also RSVPs if needed.\n\nCalls `common.permissions.require_not_admin`, `events.services.mark_paid`,\nthen `events.selectors.get_attendance`.\n\nReturns:\n    200 with `has_paid=true`, `is_going=true`.\n\nRaises:\n    PermissionDeniedError: 403 admin.\n    NotFoundError: 404 unknown event or draft.\n    BusinessRuleError: 400 free, cancelled or ended event.\n    ConflictError: 409 \"Event is full\".",
+        "operationId": "events_views_mark_paid",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark Paid",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/{event_id}/publish": {
+      "post": {
+        "description": "Publish a saved draft (US-25 \u2192 US-09).\n\nCalls `events.services.publish_event`.\n\nReturns:\n    200 with the published card.\n\nRaises:\n    NotFoundError: 404 unknown event, or a draft not owned by the user.\n    BusinessRuleError: 400 not a draft.\n    FieldValidationError: 422 incomplete or invalid draft.",
+        "operationId": "events_views_publish_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Publish Event",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/events/{event_id}/rsvp": {
+      "delete": {
+        "description": "Cancel my attendance (US-06) or remove a cancelled event from My events (US-07).\n\nCalls `common.permissions.require_not_admin`, `events.services.cancel_rsvp`,\nthen `events.selectors.get_attendance`.\n\nReturns:\n    200 with the new attendee count and `is_going=false`; `has_paid` unchanged (US-08).\n\nRaises:\n    PermissionDeniedError: 403 admin.\n    NotFoundError: 404 unknown event or no RSVP.",
+        "operationId": "events_views_delete_rsvp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Delete Rsvp",
+        "tags": [
+          "events"
+        ]
+      },
+      "post": {
+        "description": "Click \"I'm going\" (US-06).\n\nCalls `common.permissions.require_not_admin`, `events.services.rsvp`,\nthen `events.selectors.get_attendance`.\n\nReturns:\n    201 with the new attendee count and `is_going=true`.\n\nRaises:\n    401 (Ninja `django_auth`) not logged in \u2192 SPA redirects to login.\n    PermissionDeniedError: 403 admin (US-19).\n    NotFoundError: 404 unknown event or draft.\n    BusinessRuleError: 400 cancelled or ended.\n    ConflictError: 409 already going or \"Event is full\".",
+        "operationId": "events_views_create_rsvp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Rsvp",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/inbox": {
+      "get": {
+        "description": "Return the user's messages, newest first, 20 per page (architecture.md \u00a73).\n\nCalls `inbox.selectors.list_notifications`. Ninja wraps the result as\n`{items, count}` and reads `?page=`.\n\nReturns:\n    The queryset to paginate.\n\nRaises:\n    401 (Ninja `django_auth`) when not logged in.",
+        "operationId": "inbox_views_list_notifications",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedNotificationOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Notifications",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/inbox/unread-count": {
+      "get": {
+        "description": "Return the unread badge count (US-22).\n\nCalls `inbox.selectors.count_unread`.\n\nReturns:\n    200 `{count}`.",
+        "operationId": "inbox_views_unread_count",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Unread Count",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/inbox/{notification_id}/read": {
+      "post": {
+        "description": "Mark a message as read when it is opened (US-22).\n\nCalls `inbox.services.mark_read`.\n\nReturns:\n    200 with the message, `is_read=true`.\n\nRaises:\n    NotFoundError: 404 unknown id or someone else's message.",
+        "operationId": "inbox_views_mark_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "title": "Notification Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark Read",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "description": "Return role, unread inbox count and organizer-request status (drives UI visibility).\n\nCalls `accounts.selectors.get_latest_organizer_request` and `inbox.selectors.count_unread`.\n\nReturns:\n    200 with `MeOut`.\n\nRaises:\n    401 (Ninja `django_auth`) when not logged in.",
+        "operationId": "accounts_views_get_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Get Me",
+        "tags": [
+          "auth & account"
+        ]
+      }
+    },
+    "/api/v1/me/drafts": {
+      "get": {
+        "description": "Return \"My drafts\" (US-25).\n\nCalls `common.permissions.require_role(ORGANIZER)` and `events.selectors.list_my_drafts`.\n\nReturns:\n    200 with the organizer's own drafts only.\n\nRaises:\n    PermissionDeniedError: 403 not an organizer.",
+        "operationId": "events_views_list_my_drafts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DraftOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List My Drafts",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/me/events": {
+      "get": {
+        "description": "Return \"My events\" (US-07).\n\nCalls `common.permissions.require_not_admin` and `events.selectors.list_my_events`.\n\nReturns:\n    200 with RSVP'd, not-ended events (cancelled ones tagged), ongoing first.\n\nRaises:\n    PermissionDeniedError: 403 admin (US-07/19).",
+        "operationId": "events_views_list_my_events",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MyEventOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List My Events",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/me/organizer-request": {
+      "post": {
+        "description": "Send a \"Become an organizer\" request (US-20).\n\nCalls `common.permissions.require_not_admin`, then\n`accounts.services.create_organizer_request`.\n\nReturns:\n    201 with the pending request.\n\nRaises:\n    PermissionDeniedError: 403 admin (US-19) or already organizer.\n    ConflictError: 409 a request is already pending.",
+        "operationId": "accounts_views_create_organizer_request",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizerRequestOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Organizer Request",
+        "tags": [
+          "auth & account"
+        ]
+      }
+    },
+    "/api/v1/sports": {
+      "get": {
+        "description": "List sports for the filter dropdown and the form.\n\nCalls `events.selectors.list_sports`.\n\nReturns:\n    200 with every sport, ordered by name.",
+        "operationId": "events_views_list_sports",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SportOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "List Sports",
+        "tags": [
+          "events"
+        ]
+      }
+    }
+  },
+  "servers": []
+}

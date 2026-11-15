@@ -61,6 +61,7 @@ Tests do not live in the apps: they all go in `backend/test/`, one file per laye
 ```bash
 ./scripts/start.sh        # build + start, log to logs/eventapp_<time>.log (Windows: scripts\start.ps1)
 docker compose up --build # also works, but writes no log file
+./scripts/gen-api.sh      # after any API change: regenerate frontend types from the backend (Windows: scripts\gen-api.ps1)
 docker compose down       # stop
 docker compose exec backend python manage.py makemigrations
 docker compose exec backend python manage.py migrate     # also runs automatically on backend start
