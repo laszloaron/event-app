@@ -1,6 +1,6 @@
 # EventMap
 
-A mobile-first web app for discovering local sports events on a map.
+A web app for discovering local sports events on a map.
 
 ## Quick start
 Requires Docker Desktop.
