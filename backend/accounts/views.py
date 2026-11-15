@@ -8,8 +8,11 @@ from ninja import Router
 from ninja.decorators import decorate_view
 from ninja.security import django_auth
 
+from accounts import selectors, services
 from accounts.schemas import LoginIn, MeOut, OrganizerRequestOut, RegisterIn, UserOut
+from common.permissions import require_not_admin
 from common.schemas import ErrorOut, OkOut
+from inbox.selectors import count_unread
 
 router = Router(tags=["auth & account"])
 
@@ -22,7 +25,7 @@ def get_csrf(request: HttpRequest) -> OkOut:
     Returns:
         200 `{ok: true}`; the cookie is the real payload.
     """
-    raise NotImplementedError
+    return OkOut()
 
 
 @router.post("/auth/register", response={201: UserOut, 422: ErrorOut})
@@ -37,7 +40,11 @@ def register(request: HttpRequest, payload: RegisterIn) -> tuple[int, UserOut]:
     Raises:
         FieldValidationError: 422 taken username, invalid email or weak password.
     """
-    raise NotImplementedError
+    user = services.register_user(
+        username=payload.username, email=payload.email, password=payload.password
+    )
+    services.login_user(request=request, username=payload.username, password=payload.password)
+    return 201, user
 
 
 @router.post("/auth/login", response={200: UserOut, 401: ErrorOut})
@@ -52,7 +59,9 @@ def login(request: HttpRequest, payload: LoginIn) -> UserOut:
     Raises:
         AuthenticationFailedError: 401 wrong credentials.
     """
-    raise NotImplementedError
+    return services.login_user(
+        request=request, username=payload.username, password=payload.password
+    )
 
 
 @router.post("/auth/logout", response={200: OkOut, 401: ErrorOut}, auth=django_auth)
@@ -67,7 +76,8 @@ def logout(request: HttpRequest) -> OkOut:
     Raises:
         401 (Ninja `django_auth`) when not logged in.
     """
-    raise NotImplementedError
+    services.logout_user(request=request)
+    return OkOut()
 
 
 @router.get("/me", response={200: MeOut, 401: ErrorOut}, auth=django_auth)
@@ -82,7 +92,16 @@ def get_me(request: HttpRequest) -> MeOut:
     Raises:
         401 (Ninja `django_auth`) when not logged in.
     """
-    raise NotImplementedError
+    user = request.user
+    latest = selectors.get_latest_organizer_request(user=user)
+    return {
+        "id": user.pk,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
+        "unread_count": count_unread(user=user),
+        "organizer_request_status": latest.status if latest else None,
+    }
 
 
 @router.post(
@@ -103,4 +122,5 @@ def create_organizer_request(request: HttpRequest) -> tuple[int, OrganizerReques
         PermissionDeniedError: 403 admin (US-19) or already organizer.
         ConflictError: 409 a request is already pending.
     """
-    raise NotImplementedError
+    user = require_not_admin(request.user)
+    return 201, services.create_organizer_request(user=user)

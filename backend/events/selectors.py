@@ -1,15 +1,19 @@
 """Read-only queries for events: discovery, the event card, My events, My drafts."""
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
-from django.db.models import QuerySet
+from django.contrib.gis.measure import D
+from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Q, QuerySet, Value, When
 
 from accounts.models import User
-from events.models import City, Event, Sport
+from common.errors import NotFoundError
+from events.models import RSVP, City, Event, PaidMark, Sport
 
 SEARCH_RESULT_LIMIT: int = 1000
 """Hard cap instead of pagination: map and list need the full set (AC 2, architecture.md §3)."""
@@ -29,9 +33,29 @@ class ViewerFlags:
     can_delete: bool
 
 
+def _ongoing_first(*, queryset: QuerySet[Event], now: datetime) -> QuerySet[Event]:
+    """Order events ongoing first, then by start time, earliest first (US-07/23).
+
+    Shared by `search_events` and `list_my_events` (no duplicated code). Both already
+    exclude ended events, so "started" means "ongoing" here.
+
+    Args:
+        queryset: Events to order.
+        now: Current time.
+
+    Returns:
+        The ordered queryset (`id` breaks ties so the order is stable).
+    """
+    return queryset.annotate(
+        ongoing_rank=Case(
+            When(start_at__lte=now, then=Value(0)), default=Value(1), output_field=IntegerField()
+        )
+    ).order_by("ongoing_rank", "start_at", "id")
+
+
 def list_sports() -> QuerySet[Sport]:
     """Return every sport, ordered by name (filter dropdown and form)."""
-    raise NotImplementedError
+    return Sport.objects.order_by("name")
 
 
 def lookup_city(*, name: str) -> City:
@@ -46,7 +70,12 @@ def lookup_city(*, name: str) -> City:
     Raises:
         NotFoundError: (404, detail="City not found") no seeded city matches.
     """
-    raise NotImplementedError
+    decomposed = unicodedata.normalize("NFKD", name.strip())
+    normalized = "".join(ch for ch in decomposed if not unicodedata.combining(ch)).lower()
+    city = City.objects.filter(name_normalized=normalized).first()
+    if city is None:
+        raise NotFoundError("City not found")
+    return city
 
 
 def search_events(
@@ -84,7 +113,32 @@ def search_events(
         Events annotated with `distance` (metres) and `attendee_count`, ordered
         ongoing first, then by `start_at` (US-23), with `sport` selected.
     """
-    raise NotImplementedError
+    queryset = (
+        Event.objects.filter(
+            status=Event.Status.PUBLISHED,
+            end_at__gt=now,
+            location__distance_lte=(center, D(km=radius_km)),
+        )
+        .select_related("sport")
+        .annotate(distance=Distance("location", center), attendee_count=Count("rsvps"))
+    )
+    # Overlap, not containment: an event that started before date_from but is still
+    # running stays visible (US-01 "includes events that are already ongoing").
+    if date_from is not None:
+        queryset = queryset.filter(end_at__gt=date_from)
+    if date_to is not None:
+        queryset = queryset.filter(start_at__lt=date_to)
+    if sports:
+        queryset = queryset.filter(sport__slug__in=sports)
+    if price == "free":
+        queryset = queryset.filter(price_amount__isnull=True)
+    elif price == "paid":
+        queryset = queryset.filter(price_amount__isnull=False)
+    if max_price is not None:
+        queryset = queryset.filter(Q(price_amount__isnull=True) | Q(price_amount__lte=max_price))
+    if q:
+        queryset = queryset.filter(title__icontains=q)
+    return _ongoing_first(queryset=queryset, now=now)[:limit]
 
 
 def get_event_for_viewer(*, event_id: int, user: User | AnonymousUser) -> Event:
@@ -103,7 +157,15 @@ def get_event_for_viewer(*, event_id: int, user: User | AnonymousUser) -> Event:
     Raises:
         NotFoundError: (404) no such event, or a draft the viewer does not own.
     """
-    raise NotImplementedError
+    event = (
+        Event.objects.select_related("sport", "organizer")
+        .annotate(attendee_count=Count("rsvps"))
+        .filter(pk=event_id)
+        .first()
+    )
+    if event is None or (event.status == Event.Status.DRAFT and event.organizer_id != user.pk):
+        raise NotFoundError("Event not found")
+    return event
 
 
 def get_viewer_flags(*, event: Event, user: User | AnonymousUser, now: datetime) -> ViewerFlags:
@@ -121,7 +183,29 @@ def get_viewer_flags(*, event: Event, user: User | AnonymousUser, now: datetime)
     Returns:
         The viewer's flags.
     """
-    raise NotImplementedError
+    if not user.is_authenticated:
+        return ViewerFlags(
+            is_going=False, has_paid=False, can_rsvp=False, can_mark_paid=False,
+            can_edit=False, can_cancel=False, can_publish=False, can_delete=False,
+        )
+    is_owner = event.organizer_id == user.pk
+    is_admin = user.is_admin_role
+    is_draft = event.status == Event.Status.DRAFT
+    is_live = event.status == Event.Status.PUBLISHED and not (
+        event.end_at is not None and event.end_at <= now
+    )
+    may_attend = is_live and not is_admin
+    is_going = RSVP.objects.filter(user=user, event=event).exists()
+    return ViewerFlags(
+        is_going=is_going,
+        has_paid=PaidMark.objects.filter(user=user, event=event).exists(),
+        can_rsvp=may_attend and not is_going,
+        can_mark_paid=may_attend and not event.is_free,
+        can_edit=(is_live and (is_owner or is_admin)) or (is_draft and is_owner),
+        can_cancel=is_live and (is_owner or is_admin),
+        can_publish=is_draft and is_owner,
+        can_delete=is_draft and is_owner,
+    )
 
 
 def get_attendance(*, event_id: int, user: User) -> tuple[int, bool, bool]:
@@ -137,7 +221,13 @@ def get_attendance(*, event_id: int, user: User) -> tuple[int, bool, bool]:
     Raises:
         NotFoundError: (404) no such event.
     """
-    raise NotImplementedError
+    if not Event.objects.filter(pk=event_id).exists():
+        raise NotFoundError("Event not found")
+    return (
+        RSVP.objects.filter(event_id=event_id).count(),
+        RSVP.objects.filter(event_id=event_id, user=user).exists(),
+        PaidMark.objects.filter(event_id=event_id, user=user).exists(),
+    )
 
 
 def list_my_events(*, user: User, now: datetime) -> QuerySet[Event]:
@@ -152,7 +242,16 @@ def list_my_events(*, user: User, now: datetime) -> QuerySet[Event]:
     Returns:
         Events annotated with `has_paid`, ordered ongoing first, then by `start_at`.
     """
-    raise NotImplementedError
+    queryset = (
+        Event.objects.filter(
+            rsvps__user=user,
+            end_at__gt=now,
+            status__in=[Event.Status.PUBLISHED, Event.Status.CANCELLED],
+        )
+        .select_related("sport")
+        .annotate(has_paid=Exists(PaidMark.objects.filter(user=user, event=OuterRef("pk"))))
+    )
+    return _ongoing_first(queryset=queryset, now=now)
 
 
 def list_my_drafts(*, user: User) -> QuerySet[Event]:
@@ -161,4 +260,8 @@ def list_my_drafts(*, user: User) -> QuerySet[Event]:
     Args:
         user: The organizer.
     """
-    raise NotImplementedError
+    return (
+        Event.objects.filter(organizer=user, status=Event.Status.DRAFT)
+        .select_related("sport")
+        .order_by("-updated_at", "-id")
+    )

@@ -52,12 +52,12 @@ class CityOut(ModelSchema):
     @staticmethod
     def resolve_lat(obj: City) -> float:
         """Return the latitude of `City.center`."""
-        raise NotImplementedError
+        return obj.center.y
 
     @staticmethod
     def resolve_lng(obj: City) -> float:
         """Return the longitude of `City.center`."""
-        raise NotImplementedError
+        return obj.center.x
 
 
 # --- Shared pieces --------------------------------------------------------------------
@@ -92,17 +92,19 @@ class OrganizerOut(ModelSchema):
 
 def _price_of(event: Event) -> PriceOut | None:
     """Map `price_amount` + `price_currency` to `PriceOut`, or None for "Free"."""
-    raise NotImplementedError
+    if event.price_amount is None:
+        return None
+    return PriceOut(amount=event.price_amount, currency=event.price_currency)
 
 
 def _lat_of(event: Event) -> float | None:
     """Return the latitude of `Event.location`, or None while a draft has no pin."""
-    raise NotImplementedError
+    return event.location.y if event.location else None
 
 
 def _lng_of(event: Event) -> float | None:
     """Return the longitude of `Event.location`, or None while a draft has no pin."""
-    raise NotImplementedError
+    return event.location.x if event.location else None
 
 
 # --- Discovery ------------------------------------------------------------------------
@@ -166,7 +168,7 @@ class EventListItemOut(ModelSchema):
     @staticmethod
     def resolve_distance_km(obj: Event) -> float:
         """Convert the `distance` annotation (a `Distance`) to kilometres."""
-        raise NotImplementedError
+        return round(obj.distance.km, 2)
 
 
 class EventListOut(Schema):
@@ -254,7 +256,7 @@ class EventDetailOut(ModelSchema):
     @staticmethod
     def resolve_is_cancelled(obj: Event) -> bool:
         """True if `status` is cancelled (card shows the "Cancelled" label, US-11)."""
-        raise NotImplementedError
+        return obj.status == Event.Status.CANCELLED
 
 
 # --- Attending ------------------------------------------------------------------------
@@ -301,7 +303,7 @@ class MyEventOut(ModelSchema):
     @staticmethod
     def resolve_is_cancelled(obj: Event) -> bool:
         """True if `status` is cancelled ("Cancelled" tag, US-07)."""
-        raise NotImplementedError
+        return obj.status == Event.Status.CANCELLED
 
 
 # --- Organizing -----------------------------------------------------------------------

@@ -1,11 +1,9 @@
-"""API contract tests for auth and account endpoints (architecture.md §3, US-19/20)."""
-from django.test import tag
-
+"""API tests for auth and account endpoints (architecture.md §3, US-19/20)."""
 from accounts.models import OrganizerRequest, User
-from test.helpers import API, API_CONTRACT_TAG, ApiTestCase, make_user
+from inbox.models import Notification
+from test.helpers import API, ApiTestCase, make_user
 
 
-@tag(API_CONTRACT_TAG)
 class AuthApiTests(ApiTestCase):
     def test_auth_csrf_sets_cookie(self) -> None:
         response = self.get_json("/auth/csrf")
@@ -75,7 +73,6 @@ class AuthApiTests(ApiTestCase):
         self.assertEqual(self.post_json("/auth/logout").status_code, 401)
 
 
-@tag(API_CONTRACT_TAG)
 class MeApiTests(ApiTestCase):
     def test_me_anonymous_401(self) -> None:
         self.assertEqual(self.get_json("/me").status_code, 401)
@@ -98,8 +95,17 @@ class MeApiTests(ApiTestCase):
 
         self.assertIsNone(self.get_json("/me").json()["organizer_request_status"])
 
+    def test_us22_me_unread_count_counts_unread(self) -> None:
+        user = make_user("anna")
+        Notification.objects.create(recipient=user, kind=Notification.Kind.ORGANIZER_REJECTED)
+        Notification.objects.create(
+            recipient=user, kind=Notification.Kind.ORGANIZER_REJECTED, is_read=True
+        )
+        self.login(user)
 
-@tag(API_CONTRACT_TAG)
+        self.assertEqual(self.get_json("/me").json()["unread_count"], 1)
+
+
 class OrganizerRequestApiTests(ApiTestCase):
     def test_us20_request_created_pending(self) -> None:
         self.login(make_user("anna"))

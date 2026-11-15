@@ -27,7 +27,7 @@ class NotificationOut(ModelSchema):
     @staticmethod
     def resolve_event_title(obj: Notification) -> str | None:
         """Title of the linked event (selected by `list_notifications`), or None."""
-        raise NotImplementedError
+        return obj.event.title if obj.event_id else None
 
 
 class UnreadCountOut(Schema):

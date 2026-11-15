@@ -15,8 +15,6 @@ from accounts.models import User
 from events.models import RSVP, City, Event, Sport
 
 API = "/api/v1"
-API_CONTRACT_TAG = "api_contract"
-"""Tag for tests written before their endpoint is implemented; run with `--tag api_contract`."""
 
 # Budapest centre (lng, lat). One degree of longitude here is about 75 km.
 BUDAPEST_LNG = 19.0402

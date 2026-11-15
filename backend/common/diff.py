@@ -26,4 +26,8 @@ def diff_fields(*, old: Mapping[str, Any], new: Mapping[str, Any]) -> list[Field
         One `FieldChange` per key whose value differs, in `old`'s key order;
         an empty list when nothing changed.
     """
-    raise NotImplementedError
+    return [
+        FieldChange(field=key, old=value, new=new.get(key))
+        for key, value in old.items()
+        if new.get(key) != value
+    ]

@@ -4,11 +4,17 @@ Mounted at the API root with full paths, because `/me/events` and `/me/drafts` s
 `/me` prefix with the accounts app. Every view: permission helper → schema → selector /
 service → response; business rules stay in services.
 """
+from django.contrib.gis.geos import Point
 from django.http import HttpRequest
+from django.utils import timezone
 from ninja import Query, Router
 from ninja.security import django_auth
 
+from accounts.models import User
+from common.permissions import require_not_admin, require_role
 from common.schemas import ErrorOut
+from events import selectors, services
+from events.models import Event
 from events.schemas import (
     AttendanceOut,
     CancelIn,
@@ -26,6 +32,46 @@ from events.schemas import (
 router = Router(tags=["events"])
 
 
+def _event_card(request: HttpRequest, event_id: int) -> Event:
+    """Load the event card for the current viewer, with its `viewer` flags attached.
+
+    Shared by the 5 views that answer with `EventDetailOut` (no duplicated code). The
+    card is always re-read after a write, so it shows DB-rounded values and the
+    current `attendee_count`.
+
+    Args:
+        request: Current request; `request.user` is the viewer.
+        event_id: Event primary key.
+
+    Returns:
+        The annotated event with a `viewer` attribute (`ViewerFlags`).
+
+    Raises:
+        NotFoundError: (404) no such event, or a draft the viewer does not own.
+    """
+    event = selectors.get_event_for_viewer(event_id=event_id, user=request.user)
+    event.viewer = selectors.get_viewer_flags(event=event, user=request.user, now=timezone.now())
+    return event
+
+
+def _attendance(user: User, event_id: int) -> AttendanceOut:
+    """Build the attendance response of the RSVP / paid endpoints (US-06/08).
+
+    Shared by the 4 attendance views (no duplicated code).
+
+    Args:
+        user: The acting user.
+        event_id: Event primary key.
+
+    Returns:
+        The current attendee count and the user's going/paid state.
+    """
+    attendee_count, is_going, has_paid = selectors.get_attendance(event_id=event_id, user=user)
+    return AttendanceOut(
+        event_id=event_id, attendee_count=attendee_count, is_going=is_going, has_paid=has_paid
+    )
+
+
 # --- Reference data -------------------------------------------------------------------
 
 
@@ -38,7 +84,7 @@ def list_sports(request: HttpRequest) -> list[SportOut]:
     Returns:
         200 with every sport, ordered by name.
     """
-    raise NotImplementedError
+    return selectors.list_sports()
 
 
 @router.get("/cities/lookup", response={200: CityOut, 404: ErrorOut})
@@ -53,7 +99,7 @@ def lookup_city(request: HttpRequest, name: str) -> CityOut:
     Raises:
         NotFoundError: 404 `{"detail": "City not found"}`.
     """
-    raise NotImplementedError
+    return selectors.lookup_city(name=name)
 
 
 # --- Discovery ------------------------------------------------------------------------
@@ -72,7 +118,20 @@ def search_events(request: HttpRequest, filters: Query[EventSearchQuery]) -> Eve
     Raises:
         422 (Ninja validation) missing `lat`/`lng` or `radius_km` outside (0, 50].
     """
-    raise NotImplementedError
+    items = list(
+        selectors.search_events(
+            center=Point(filters.lng, filters.lat, srid=4326),
+            radius_km=filters.radius_km,
+            now=timezone.now(),
+            date_from=filters.date_from,
+            date_to=filters.date_to,
+            sports=filters.sport,
+            price=filters.price,
+            max_price=filters.max_price,
+            q=filters.q,
+        )
+    )
+    return {"count": len(items), "items": items}
 
 
 # --- Event card -----------------------------------------------------------------------
@@ -90,7 +149,7 @@ def get_event(request: HttpRequest, event_id: int) -> EventDetailOut:
     Raises:
         NotFoundError: 404 unknown id, or a draft the viewer does not own (US-25).
     """
-    raise NotImplementedError
+    return _event_card(request, event_id)
 
 
 # --- Attending ------------------------------------------------------------------------
@@ -117,7 +176,9 @@ def create_rsvp(request: HttpRequest, event_id: int) -> tuple[int, AttendanceOut
         BusinessRuleError: 400 cancelled or ended.
         ConflictError: 409 already going or "Event is full".
     """
-    raise NotImplementedError
+    user = require_not_admin(request.user)
+    services.rsvp(event_id=event_id, user=user, now=timezone.now())
+    return 201, _attendance(user, event_id)
 
 
 @router.delete(
@@ -138,7 +199,9 @@ def delete_rsvp(request: HttpRequest, event_id: int) -> AttendanceOut:
         PermissionDeniedError: 403 admin.
         NotFoundError: 404 unknown event or no RSVP.
     """
-    raise NotImplementedError
+    user = require_not_admin(request.user)
+    services.cancel_rsvp(event_id=event_id, user=user)
+    return _attendance(user, event_id)
 
 
 @router.put(
@@ -161,7 +224,9 @@ def mark_paid(request: HttpRequest, event_id: int) -> AttendanceOut:
         BusinessRuleError: 400 free, cancelled or ended event.
         ConflictError: 409 "Event is full".
     """
-    raise NotImplementedError
+    user = require_not_admin(request.user)
+    services.mark_paid(event_id=event_id, user=user, now=timezone.now())
+    return _attendance(user, event_id)
 
 
 @router.delete(
@@ -182,7 +247,9 @@ def unmark_paid(request: HttpRequest, event_id: int) -> AttendanceOut:
         PermissionDeniedError: 403 admin.
         NotFoundError: 404 unknown event.
     """
-    raise NotImplementedError
+    user = require_not_admin(request.user)
+    services.unmark_paid(event_id=event_id, user=user)
+    return _attendance(user, event_id)
 
 
 @router.get("/me/events", response={200: list[MyEventOut], 401: ErrorOut, 403: ErrorOut}, auth=django_auth)
@@ -197,7 +264,8 @@ def list_my_events(request: HttpRequest) -> list[MyEventOut]:
     Raises:
         PermissionDeniedError: 403 admin (US-07/19).
     """
-    raise NotImplementedError
+    user = require_not_admin(request.user)
+    return selectors.list_my_events(user=user, now=timezone.now())
 
 
 # --- Organizing -----------------------------------------------------------------------
@@ -221,7 +289,11 @@ def create_event(request: HttpRequest, payload: EventCreateIn) -> tuple[int, Eve
         FieldValidationError: 422 `{detail, field}`; on "draft" only format errors,
             on "publish" also missing required fields.
     """
-    raise NotImplementedError
+    organizer = require_role(request.user, User.Role.ORGANIZER)
+    fields = payload.dict(exclude_unset=True)
+    publish = fields.pop("action") == "publish"
+    event = services.create_event(organizer=organizer, fields=fields, publish=publish)
+    return 201, _event_card(request, event.pk)
 
 
 @router.get("/me/drafts", response={200: list[DraftOut], 401: ErrorOut, 403: ErrorOut}, auth=django_auth)
@@ -236,7 +308,8 @@ def list_my_drafts(request: HttpRequest) -> list[DraftOut]:
     Raises:
         PermissionDeniedError: 403 not an organizer.
     """
-    raise NotImplementedError
+    organizer = require_role(request.user, User.Role.ORGANIZER)
+    return selectors.list_my_drafts(user=organizer)
 
 
 @router.patch(
@@ -258,7 +331,13 @@ def update_event(request: HttpRequest, event_id: int, payload: EventPatchIn) -> 
         BusinessRuleError: 400 cancelled or ended.
         FieldValidationError: 422 validation failure or capacity below RSVPs.
     """
-    raise NotImplementedError
+    services.update_event(
+        event_id=event_id,
+        actor=request.user,
+        fields=payload.dict(exclude_unset=True),
+        now=timezone.now(),
+    )
+    return _event_card(request, event_id)
 
 
 @router.post(
@@ -279,7 +358,8 @@ def publish_event(request: HttpRequest, event_id: int) -> EventDetailOut:
         BusinessRuleError: 400 not a draft.
         FieldValidationError: 422 incomplete or invalid draft.
     """
-    raise NotImplementedError
+    services.publish_event(event_id=event_id, actor=request.user, now=timezone.now())
+    return _event_card(request, event_id)
 
 
 @router.delete(
@@ -299,7 +379,8 @@ def delete_draft(request: HttpRequest, event_id: int) -> tuple[int, None]:
         NotFoundError: 404 unknown event, or a draft not owned by the user.
         BusinessRuleError: 400 not a draft.
     """
-    raise NotImplementedError
+    services.delete_draft(event_id=event_id, actor=request.user)
+    return 204, None
 
 
 @router.post(
@@ -321,4 +402,7 @@ def cancel_event(request: HttpRequest, event_id: int, payload: CancelIn) -> Even
         BusinessRuleError: 400 already cancelled or ended.
         FieldValidationError: 422 (field="reason") admin without a reason.
     """
-    raise NotImplementedError
+    services.cancel_event(
+        event_id=event_id, actor=request.user, reason=payload.reason, now=timezone.now()
+    )
+    return _event_card(request, event_id)

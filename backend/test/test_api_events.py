@@ -1,19 +1,18 @@
-"""API contract tests for reference data, discovery, card, attending and organizing.
+"""API tests for reference data, discovery, card, attending and organizing.
 
 Covers US-01..16 and US-23..25 (architecture.md §3).
 """
 from datetime import timedelta
 from typing import Any
 
-from django.test import tag
+from django.contrib.gis.geos import Point
 from django.utils import timezone
 
 from accounts.models import User
-from events.models import RSVP, Event, PaidMark
+from events.models import RSVP, City, Event, PaidMark
 from inbox.models import Notification
 from moderation.models import AuditLog
 from test.helpers import (
-    API_CONTRACT_TAG,
     BUDAPEST_LAT,
     BUDAPEST_LNG,
     ApiTestCase,
@@ -72,7 +71,6 @@ class EventApiTestCase(ApiTestCase):
 # --- Reference data -------------------------------------------------------------------
 
 
-@tag(API_CONTRACT_TAG)
 class ReferenceDataApiTests(EventApiTestCase):
     def test_us02_sports_listed_by_name(self) -> None:
         make_sport("pentathlon")
@@ -102,11 +100,25 @@ class ReferenceDataApiTests(EventApiTestCase):
         self.assert_error(response, 404)
         self.assertEqual(response.json()["detail"], "City not found")
 
+    def test_us04_city_lookup_ignores_case_and_accents(self) -> None:
+        # Seeded like events/fixtures/cities.json: name_normalized is lower-case, unaccented.
+        City.objects.create(
+            name="Pécs",
+            name_normalized="pecs",
+            center=Point(18.2323, 46.0727, srid=4326),
+            timezone="Europe/Budapest",
+        )
+
+        for typed in ("Pécs", "PECS", " pecs "):
+            with self.subTest(typed=typed):
+                response = self.get_json("/cities/lookup", {"name": typed})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["name"], "Pécs")
+
 
 # --- Discovery ------------------------------------------------------------------------
 
 
-@tag(API_CONTRACT_TAG)
 class SearchEventsApiTests(EventApiTestCase):
     def test_us01_nearby_event_today_listed(self) -> None:
         event = make_event(self.organizer, km_east=2)
@@ -205,7 +217,6 @@ class SearchEventsApiTests(EventApiTestCase):
 # --- Event card -----------------------------------------------------------------------
 
 
-@tag(API_CONTRACT_TAG)
 class EventCardApiTests(EventApiTestCase):
     def test_us05_card_shows_all_fields(self) -> None:
         event = make_event(
@@ -300,7 +311,6 @@ class EventCardApiTests(EventApiTestCase):
 # --- Attending ------------------------------------------------------------------------
 
 
-@tag(API_CONTRACT_TAG)
 class RsvpApiTests(EventApiTestCase):
     def test_us06_rsvp_increments_count(self) -> None:
         event = make_event(self.organizer)
@@ -396,7 +406,6 @@ class RsvpApiTests(EventApiTestCase):
         self.assertEqual(self.get_json("/me/events").json(), [])
 
 
-@tag(API_CONTRACT_TAG)
 class PaidMarkApiTests(EventApiTestCase):
     def test_us08_mark_paid_also_rsvps(self) -> None:
         event = make_paid_event(self.organizer)
@@ -466,7 +475,6 @@ class PaidMarkApiTests(EventApiTestCase):
         self.assert_error(self.delete(f"/events/{event.id}/paid"), 403)
 
 
-@tag(API_CONTRACT_TAG)
 class MyEventsApiTests(EventApiTestCase):
     def test_us07_lists_rsvped_events_ongoing_first(self) -> None:
         later = make_event(self.organizer, starts_in=timedelta(days=2))
@@ -518,7 +526,6 @@ class MyEventsApiTests(EventApiTestCase):
 # --- Organizing -----------------------------------------------------------------------
 
 
-@tag(API_CONTRACT_TAG)
 class CreateEventApiTests(EventApiTestCase):
     def test_us09_publish_complete_form_appears_in_search(self) -> None:
         self.login(self.organizer)
@@ -618,7 +625,6 @@ class CreateEventApiTests(EventApiTestCase):
         self.assert_error(self.post_json("/events", {"capacity": 0, "action": "draft"}), 422, field="capacity")
 
 
-@tag(API_CONTRACT_TAG)
 class DraftsApiTests(EventApiTestCase):
     def test_us25_my_drafts_lists_only_own_drafts(self) -> None:
         own = make_event(self.organizer, status=Event.Status.DRAFT)
@@ -696,7 +702,6 @@ class DraftsApiTests(EventApiTestCase):
         self.assert_error(self.delete(f"/events/{event.id}"), 400)
 
 
-@tag(API_CONTRACT_TAG)
 class UpdateEventApiTests(EventApiTestCase):
     def test_us16_owner_edit_notifies_attendees_with_diff(self) -> None:
         event = make_event(self.organizer, title="Old title")
@@ -805,8 +810,26 @@ class UpdateEventApiTests(EventApiTestCase):
 
         self.assertFalse(AuditLog.objects.exists())
 
+    def test_us16_edit_ongoing_event_allowed(self) -> None:
+        # Already started, not ended: the "start in the future" rule must not block edits.
+        event = make_event(self.organizer, starts_in=timedelta(hours=-1), duration=timedelta(hours=3))
+        self.login(self.organizer)
 
-@tag(API_CONTRACT_TAG)
+        response = self.patch_json(f"/events/{event.id}", {"venue_name": "Hall B"})
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["venue_name"], "Hall B")
+
+    def test_us16_cannot_move_start_into_past_422(self) -> None:
+        event = make_event(self.organizer, starts_in=timedelta(days=1))
+        self.login(self.organizer)
+        past = timezone.now() - timedelta(hours=1)
+
+        response = self.patch_json(f"/events/{event.id}", {"start_at": iso(past)})
+
+        self.assert_error(response, 422, field="start_at")
+
+
 class CancelEventApiTests(EventApiTestCase):
     def test_us10_owner_cancel_hides_and_notifies(self) -> None:
         event = make_event(self.organizer)

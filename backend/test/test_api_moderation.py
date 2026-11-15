@@ -1,13 +1,10 @@
-"""API contract tests for admin moderation endpoints (US-17/18/21)."""
-from django.test import tag
-
+"""API tests for admin moderation endpoints (US-17/18/21)."""
 from accounts.models import OrganizerRequest, User
 from inbox.models import Notification
 from moderation.models import AuditLog
-from test.helpers import API_CONTRACT_TAG, ApiTestCase, make_user
+from test.helpers import ApiTestCase, make_user
 
 
-@tag(API_CONTRACT_TAG)
 class OrganizerRequestAdminApiTests(ApiTestCase):
     def setUp(self) -> None:
         self.admin = make_user("adam", role=User.Role.ADMIN)
@@ -102,8 +99,16 @@ class OrganizerRequestAdminApiTests(ApiTestCase):
         self.requester.refresh_from_db()
         self.assertEqual(self.requester.role, User.Role.ATTENDEE)
 
+    def test_us20_approved_organizer_can_create_event(self) -> None:
+        self.login(self.admin)
+        self.post_json(f"/admin/organizer-requests/{self.request.id}/approve")
+        self.login(self.requester)
 
-@tag(API_CONTRACT_TAG)
+        response = self.post_json("/events", {"title": "My first event", "action": "draft"})
+
+        self.assertEqual(response.status_code, 201, response.content)
+
+
 class AuditLogApiTests(ApiTestCase):
     def setUp(self) -> None:
         self.admin = make_user("adam", role=User.Role.ADMIN)

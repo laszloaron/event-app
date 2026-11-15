@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser
 
+from common.errors import AuthenticationFailedError, PermissionDeniedError
+
 if TYPE_CHECKING:
     from accounts.models import User
     from events.models import Event
@@ -26,7 +28,9 @@ def require_authenticated(user: User | AnonymousUser) -> User:
     Raises:
         AuthenticationFailedError: (401) the user is anonymous; the SPA redirects to login.
     """
-    raise NotImplementedError
+    if not user.is_authenticated:
+        raise AuthenticationFailedError("Login required")
+    return user  # type: ignore[return-value]
 
 
 def require_role(user: User | AnonymousUser, *roles: str) -> User:
@@ -43,7 +47,10 @@ def require_role(user: User | AnonymousUser, *roles: str) -> User:
         AuthenticationFailedError: (401) the user is anonymous.
         PermissionDeniedError: (403) the user's role is not in `roles`.
     """
-    raise NotImplementedError
+    account = require_authenticated(user)
+    if account.role not in roles:
+        raise PermissionDeniedError("Your role does not allow this action")
+    return account
 
 
 def require_not_admin(user: User | AnonymousUser) -> User:
@@ -59,7 +66,10 @@ def require_not_admin(user: User | AnonymousUser) -> User:
         AuthenticationFailedError: (401) the user is anonymous.
         PermissionDeniedError: (403) the user is an admin.
     """
-    raise NotImplementedError
+    account = require_authenticated(user)
+    if account.is_admin_role:
+        raise PermissionDeniedError("Admins cannot attend or organize events")
+    return account
 
 
 def require_owner(user: User, event: Event) -> None:
@@ -72,7 +82,8 @@ def require_owner(user: User, event: Event) -> None:
     Raises:
         PermissionDeniedError: (403) the user is not the event's organizer.
     """
-    raise NotImplementedError
+    if event.organizer_id != user.pk:
+        raise PermissionDeniedError("Only the organizer can do this")
 
 
 def require_owner_or_admin(user: User, event: Event) -> None:
@@ -85,4 +96,5 @@ def require_owner_or_admin(user: User, event: Event) -> None:
     Raises:
         PermissionDeniedError: (403) the user is neither the organizer nor an admin.
     """
-    raise NotImplementedError
+    if event.organizer_id != user.pk and not user.is_admin_role:
+        raise PermissionDeniedError("Only the organizer or an admin can do this")

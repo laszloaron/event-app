@@ -4,10 +4,35 @@ The `notify_*` functions are called by events/moderation services inside their o
 `transaction.atomic()` block and use `bulk_create`, so a message exists exactly when
 the change that caused it was committed (architecture.md §2).
 """
+from typing import Any
+
 from accounts.models import OrganizerRequest, User
 from common.diff import FieldChange
+from common.errors import NotFoundError
 from events.models import Event
 from inbox.models import Notification
+
+
+def _notify_attendees(*, event: Event, kind: str, payload: dict[str, Any]) -> list[Notification]:
+    """Create one message of `kind` for every user who RSVP'd to `event` (one INSERT).
+
+    Shared by `notify_event_changed` and `notify_event_cancelled` (no duplicated code).
+
+    Args:
+        event: The event the message is about.
+        kind: A `Notification.Kind` value.
+        payload: Same JSON payload for every recipient.
+
+    Returns:
+        The created messages.
+    """
+    attendee_ids = event.rsvps.values_list("user_id", flat=True)
+    return Notification.objects.bulk_create(
+        [
+            Notification(recipient_id=user_id, kind=kind, event=event, payload=payload)
+            for user_id in attendee_ids
+        ]
+    )
 
 
 def mark_read(*, notification_id: int, user: User) -> Notification:
@@ -24,7 +49,17 @@ def mark_read(*, notification_id: int, user: User) -> Notification:
         NotFoundError: (404) no such message, or it belongs to someone else
             (404, not 403, so ids of other users' messages are not revealed).
     """
-    raise NotImplementedError
+    notification = (
+        Notification.objects.select_related("event")
+        .filter(pk=notification_id, recipient=user)
+        .first()
+    )
+    if notification is None:
+        raise NotFoundError("Message not found")
+    if not notification.is_read:
+        notification.is_read = True
+        notification.save(update_fields=["is_read"])
+    return notification
 
 
 def notify_event_changed(*, event: Event, changes: list[FieldChange]) -> list[Notification]:
@@ -37,7 +72,11 @@ def notify_event_changed(*, event: Event, changes: list[FieldChange]) -> list[No
     Returns:
         The created messages (kind `event_changed`), one per attendee.
     """
-    raise NotImplementedError
+    if not changes:
+        return []
+    return _notify_attendees(
+        event=event, kind=Notification.Kind.EVENT_CHANGED, payload={"changes": changes}
+    )
 
 
 def notify_event_cancelled(*, event: Event) -> list[Notification]:
@@ -49,7 +88,9 @@ def notify_event_cancelled(*, event: Event) -> list[Notification]:
     Returns:
         The created messages (kind `event_cancelled`), one per attendee.
     """
-    raise NotImplementedError
+    return _notify_attendees(
+        event=event, kind=Notification.Kind.EVENT_CANCELLED, payload={"reason": event.cancel_reason}
+    )
 
 
 def notify_organizer_of_admin_edit(*, event: Event, changes: list[FieldChange]) -> Notification:
@@ -62,7 +103,12 @@ def notify_organizer_of_admin_edit(*, event: Event, changes: list[FieldChange]) 
     Returns:
         The created message (kind `admin_edited`).
     """
-    raise NotImplementedError
+    return Notification.objects.create(
+        recipient_id=event.organizer_id,
+        kind=Notification.Kind.ADMIN_EDITED,
+        event=event,
+        payload={"changes": changes},
+    )
 
 
 def notify_organizer_of_admin_cancel(*, event: Event, reason: str) -> Notification:
@@ -75,7 +121,12 @@ def notify_organizer_of_admin_cancel(*, event: Event, reason: str) -> Notificati
     Returns:
         The created message (kind `admin_cancelled`).
     """
-    raise NotImplementedError
+    return Notification.objects.create(
+        recipient_id=event.organizer_id,
+        kind=Notification.Kind.ADMIN_CANCELLED,
+        event=event,
+        payload={"reason": reason},
+    )
 
 
 def notify_organizer_request_decided(*, request: OrganizerRequest) -> Notification:
@@ -90,4 +141,10 @@ def notify_organizer_request_decided(*, request: OrganizerRequest) -> Notificati
     Raises:
         ValueError: the request is still pending (programming error, not user input).
     """
-    raise NotImplementedError
+    kinds = {
+        OrganizerRequest.Status.APPROVED: Notification.Kind.ORGANIZER_APPROVED,
+        OrganizerRequest.Status.REJECTED: Notification.Kind.ORGANIZER_REJECTED,
+    }
+    if request.status not in kinds:
+        raise ValueError(f"Organizer request {request.pk} is not decided yet")
+    return Notification.objects.create(recipient_id=request.user_id, kind=kinds[request.status])

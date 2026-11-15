@@ -1,11 +1,8 @@
-"""API contract tests for the in-app inbox (US-22)."""
-from django.test import tag
-
+"""API tests for the in-app inbox (US-22)."""
 from inbox.models import Notification
-from test.helpers import API_CONTRACT_TAG, ApiTestCase, make_event, make_user
+from test.helpers import ApiTestCase, make_event, make_user
 
 
-@tag(API_CONTRACT_TAG)
 class InboxApiTests(ApiTestCase):
     def setUp(self) -> None:
         self.user = make_user("anna")

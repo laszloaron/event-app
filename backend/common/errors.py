@@ -27,7 +27,9 @@ class DomainError(Exception):
             detail: Human-readable message.
             field: Name of the input field the error belongs to, if any.
         """
-        raise NotImplementedError
+        super().__init__(detail)
+        self.detail = detail
+        self.field = field
 
 
 class BusinessRuleError(DomainError):

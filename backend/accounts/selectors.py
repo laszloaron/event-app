@@ -11,7 +11,7 @@ def get_latest_organizer_request(*, user: User) -> OrganizerRequest | None:
     Returns:
         The newest request by `created_at`, or None if the user never asked.
     """
-    raise NotImplementedError
+    return OrganizerRequest.objects.filter(user=user).order_by("-created_at", "-id").first()
 
 
 def has_pending_organizer_request(*, user: User) -> bool:
@@ -20,4 +20,6 @@ def has_pending_organizer_request(*, user: User) -> bool:
     Args:
         user: The requesting user.
     """
-    raise NotImplementedError
+    return OrganizerRequest.objects.filter(
+        user=user, status=OrganizerRequest.Status.PENDING
+    ).exists()

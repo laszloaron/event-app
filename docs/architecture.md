@@ -198,5 +198,5 @@ Auth legend: **P** public · **U** any logged-in non-admin · **O** organizer (o
 ## 5. Verification
 - `docker compose up --build` → `http://localhost` serves SPA; `http://localhost/api/v1/docs` shows Ninja OpenAPI.
 - `docker compose exec backend python manage.py test` — pytest/Django tests per story: radius/ongoing/ended filter, count consistency, duplicate RSVP & capacity race, draft vs publish validation, admin restrictions (403), notification + audit creation.
-- API contract tests (`backend/test/test_api_*.py`) were written before the endpoints were implemented, and are tagged `api_contract`. Run them with `--tag api_contract`; exclude them with `--exclude-tag api_contract` until their story is implemented, then remove the tag from that test class. Grounding: the interface is fixed and reviewable first (TDD red phase), while the rest of the suite stays green.
+- API tests (`backend/test/test_api_*.py`) were written before the endpoints, as the contract (TDD), and now all pass. The capacity race is tested with two concurrent threads (`test_services_events.py`). Grounding: the interface was fixed and reviewable first, then every story's ACs were checked over real HTTP.
 - Manual smoke: register → request organizer → approve as admin → create/publish → RSVP from second user → edit (inbox diff) → cancel (card shows Cancelled, gone from `/events`).

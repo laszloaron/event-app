@@ -7,7 +7,10 @@ from django.http import HttpRequest
 from ninja import Query, Router
 from ninja.security import django_auth
 
+from accounts.models import User
+from common.permissions import require_role
 from common.schemas import ErrorOut
+from moderation import selectors, services
 from moderation.schemas import AuditLogOut, OrganizerRequestAdminOut, OrganizerRequestFilter
 
 router = Router(tags=["admin"], auth=django_auth)
@@ -28,7 +31,8 @@ def list_organizer_requests(
     Raises:
         PermissionDeniedError: 403 not an admin.
     """
-    raise NotImplementedError
+    require_role(request.user, User.Role.ADMIN)
+    return selectors.list_organizer_requests(status=filters.status)
 
 
 @router.post(
@@ -49,7 +53,8 @@ def approve_organizer_request(request: HttpRequest, request_id: int) -> Organize
         NotFoundError: 404 unknown request.
         ConflictError: 409 already decided.
     """
-    raise NotImplementedError
+    admin = require_role(request.user, User.Role.ADMIN)
+    return services.approve_organizer_request(request_id=request_id, admin=admin)
 
 
 @router.post(
@@ -70,7 +75,8 @@ def reject_organizer_request(request: HttpRequest, request_id: int) -> Organizer
         NotFoundError: 404 unknown request.
         ConflictError: 409 already decided.
     """
-    raise NotImplementedError
+    admin = require_role(request.user, User.Role.ADMIN)
+    return services.reject_organizer_request(request_id=request_id, admin=admin)
 
 
 @router.get("/audit-log", response={200: list[AuditLogOut], 403: ErrorOut})
@@ -85,4 +91,5 @@ def list_audit_log(request: HttpRequest) -> list[AuditLogOut]:
     Raises:
         PermissionDeniedError: 403 not an admin.
     """
-    raise NotImplementedError
+    require_role(request.user, User.Role.ADMIN)
+    return selectors.list_audit_log()

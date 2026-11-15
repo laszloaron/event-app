@@ -6,6 +6,7 @@ from ninja.pagination import PageNumberPagination, paginate
 from ninja.security import django_auth
 
 from common.schemas import ErrorOut
+from inbox import selectors, services
 from inbox.models import Notification
 from inbox.schemas import NotificationOut, UnreadCountOut
 
@@ -26,7 +27,7 @@ def list_notifications(request: HttpRequest) -> QuerySet[Notification]:
     Raises:
         401 (Ninja `django_auth`) when not logged in.
     """
-    raise NotImplementedError
+    return selectors.list_notifications(user=request.user)
 
 
 @router.get("/unread-count", response={200: UnreadCountOut})
@@ -38,7 +39,7 @@ def unread_count(request: HttpRequest) -> UnreadCountOut:
     Returns:
         200 `{count}`.
     """
-    raise NotImplementedError
+    return {"count": selectors.count_unread(user=request.user)}
 
 
 @router.post("/{notification_id}/read", response={200: NotificationOut, 404: ErrorOut})
@@ -53,4 +54,4 @@ def mark_read(request: HttpRequest, notification_id: int) -> NotificationOut:
     Raises:
         NotFoundError: 404 unknown id or someone else's message.
     """
-    raise NotImplementedError
+    return services.mark_read(notification_id=notification_id, user=request.user)

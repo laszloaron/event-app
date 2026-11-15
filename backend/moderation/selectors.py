@@ -1,5 +1,5 @@
 """Read-only queries for admin moderation."""
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 
 from accounts.models import OrganizerRequest
 from moderation.models import AuditLog
@@ -11,9 +11,17 @@ def list_organizer_requests(*, status: str) -> QuerySet[OrganizerRequest]:
     Args:
         status: An `OrganizerRequest.Status` value.
     """
-    raise NotImplementedError
+    return (
+        OrganizerRequest.objects.filter(status=status)
+        .select_related("user")
+        .order_by("created_at", "id")
+    )
 
 
 def list_audit_log() -> QuerySet[AuditLog]:
     """Return every audit entry, newest first, with `actor` selected (US-17/18/21)."""
-    raise NotImplementedError
+    return (
+        AuditLog.objects.select_related("actor")
+        .annotate(actor_username=F("actor__username"))
+        .order_by("-created_at", "-id")
+    )

@@ -4,6 +4,8 @@ Mounts every domain router and maps errors to one JSON shape, `{detail, field?}`
 (architecture.md §3). accounts and events are mounted at the root with full paths,
 because both own endpoints under `/me`.
 """
+import logging
+
 from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 from ninja.errors import ValidationError
@@ -13,6 +15,8 @@ from common.errors import DomainError
 from events.views import router as events_router
 from inbox.views import router as inbox_router
 from moderation.views import router as moderation_router
+
+logger = logging.getLogger(__name__)
 
 api = NinjaAPI(title="EventMap API", version="1")
 
@@ -33,7 +37,13 @@ def handle_domain_error(request: HttpRequest, exc: DomainError) -> HttpResponse:
     Returns:
         JSON response with the error's status code.
     """
-    raise NotImplementedError
+    # The one place every rejected action is logged (AGENTS.md: WARNING for rejections).
+    logger.warning(
+        "Rejected %s %s: %s %s", request.method, request.path, exc.status_code, exc.detail
+    )
+    return api.create_response(
+        request, {"detail": exc.detail, "field": exc.field}, status=exc.status_code
+    )
 
 
 @api.exception_handler(ValidationError)
@@ -50,4 +60,11 @@ def handle_validation_error(request: HttpRequest, exc: ValidationError) -> HttpR
     Returns:
         422 JSON response.
     """
-    raise NotImplementedError
+    first = exc.errors[0] if exc.errors else {}
+    # loc is (source, param name, field, ...) for bodies, e.g. ("body", "payload", "title"),
+    # or (source, field) for flattened query/path params; nested errors map to the top field.
+    loc = [str(part) for part in first.get("loc", ())]
+    field = loc[2] if len(loc) > 2 else (loc[-1] if loc else None)
+    detail = str(first.get("msg", "Invalid value"))
+    logger.warning("Rejected %s %s: 422 invalid %s", request.method, request.path, field)
+    return api.create_response(request, {"detail": detail, "field": field}, status=422)

@@ -11,7 +11,11 @@ def list_notifications(*, user: User) -> QuerySet[Notification]:
     Args:
         user: The recipient.
     """
-    raise NotImplementedError
+    return (
+        Notification.objects.filter(recipient=user)
+        .select_related("event")
+        .order_by("-created_at", "-id")
+    )
 
 
 def count_unread(*, user: User) -> int:
@@ -20,4 +24,4 @@ def count_unread(*, user: User) -> int:
     Args:
         user: The recipient.
     """
-    raise NotImplementedError
+    return Notification.objects.filter(recipient=user, is_read=False).count()
